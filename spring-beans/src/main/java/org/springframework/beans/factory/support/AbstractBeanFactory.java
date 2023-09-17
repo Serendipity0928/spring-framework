@@ -199,6 +199,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	// Implementation of BeanFactory interface
 	//---------------------------------------------------------------------
 
+	/**
+	 * 该方法没有任何处理逻辑，真正逻辑在doGetBean中，此处是重写BeanFactory接口的方法
+	 */
 	@Override
 	public Object getBean(String name) throws BeansException {
 		return doGetBean(name, null, null, false);
@@ -245,9 +248,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
 
+		// 此处传入的name可能是别名，也有可能是工厂bean的name，因此需要先进行转换
 		String beanName = transformedBeanName(name);
 		Object bean;
 
+		// 尝试去缓存中获取对象
 		// Eagerly check singleton cache for manually registered singletons.
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {

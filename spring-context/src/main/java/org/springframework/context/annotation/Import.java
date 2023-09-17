@@ -50,6 +50,11 @@ import java.lang.annotation.Target;
  * @see ImportBeanDefinitionRegistrar
  * @see ImportResource
  */
+
+/**
+ * @Import 是 Spring 基于 Java 注解配置的主要组成部分，@Import 注解提供了类似 @Bean 注解的功能。
+ * 参考文档：https://blog.csdn.net/gongsenlin341/article/details/113281596
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -59,6 +64,16 @@ public @interface Import {
 	 * {@link Configuration @Configuration}, {@link ImportSelector},
 	 * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import.
 	 */
+	/**
+	 * 可以看出Import可以配合 Configuration, ImportSelector, ImportBeanDefinitionRegistrar 来使用，
+	 * 也可以用于一个普通类的导入。
+	 */
 	Class<?>[] value();
-
 }
+
+/**
+ * 使用Import注入的类一般有一下三种：
+ * 1. 普通类
+ * 2. 实现了ImportSelector接口的类
+ * 3. 实现了ImportBeanDefinitionRegistrar接口的类
+ */

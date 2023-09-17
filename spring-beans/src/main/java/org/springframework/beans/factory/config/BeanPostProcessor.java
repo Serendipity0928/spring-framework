@@ -70,6 +70,10 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 */
+	/**
+	 * 该方法是Spring后置处理器中的方法
+	 * 该方法是在Bean实例化(new)之后，初始化(设置各种属性)之前会被调用、在调用afterPropertiesSet方法之前会被调用
+	 */
 	@Nullable
 	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		return bean;
@@ -95,6 +99,10 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 * @see org.springframework.beans.factory.FactoryBean
+	 */
+	/**
+	 * 在bean初始化之后会被调用
+	 * 在调用InitializingBean的afterPropertiesSet方法或者init-method指定的方法执行之后调用.
 	 */
 	@Nullable
 	default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

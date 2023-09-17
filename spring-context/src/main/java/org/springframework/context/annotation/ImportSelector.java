@@ -58,6 +58,11 @@ import org.springframework.lang.Nullable;
  * @see ImportBeanDefinitionRegistrar
  * @see Configuration
  */
+
+/**
+ * ImportSelector 根据类型的标准选择那些应该被注入到Spring中
+ * https://blog.csdn.net/gongsenlin341/article/details/113281596
+ */
 public interface ImportSelector {
 
 	/**
@@ -65,6 +70,7 @@ public interface ImportSelector {
 	 * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
 	 * @return the class names, or an empty array if none
 	 */
+	// 返回一个包含了类全限定名的数组,这些类会注入到Spring容器当中
 	String[] selectImports(AnnotationMetadata importingClassMetadata);
 
 	/**
@@ -77,6 +83,7 @@ public interface ImportSelector {
 	 * of transitively imported configuration classes, or {@code null} if none
 	 * @since 5.2.4
 	 */
+	// 返回一个谓词接口，该方法制定了一个对类全限定名的排除规则来过滤一些候选的导入类，默认不排除过滤。该接口可以不实现。
 	@Nullable
 	default Predicate<String> getExclusionFilter() {
 		return null;

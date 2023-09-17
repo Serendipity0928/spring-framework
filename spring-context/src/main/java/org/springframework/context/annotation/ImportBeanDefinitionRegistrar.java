@@ -58,6 +58,12 @@ import org.springframework.core.type.AnnotationMetadata;
  * @see ImportSelector
  * @see Configuration
  */
+
+/**
+ * ImportSelector注入的是类级别，而ImportBeanDefinitionRegistrar实现了向Spring容器中动态注入Bean定义
+ * registry.registerBeanDefinition(beanName, beanDefinition);
+ * 参考资料：https://blog.csdn.net/gongsenlin341/article/details/113281596
+ */
 public interface ImportBeanDefinitionRegistrar {
 
 	/**
@@ -80,6 +86,7 @@ public interface ImportBeanDefinitionRegistrar {
 	 * @see ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR
 	 * @see ConfigurationClassPostProcessor#setBeanNameGenerator
 	 */
+	// 相比较于下面的方法，三参数方法支持自动生成BeanName,而两参数方法只能手动输入BeanName
 	default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
 			BeanNameGenerator importBeanNameGenerator) {
 

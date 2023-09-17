@@ -270,8 +270,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * {@link Configuration} classes.
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
-		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();  // 配置类候选集合
 		String[] candidateNames = registry.getBeanDefinitionNames();
+		// 在没有扫描之前，容器中就有五个开天辟地的内置类BD、以及自定义的配置类
 
 		for (String beanName : candidateNames) {
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);

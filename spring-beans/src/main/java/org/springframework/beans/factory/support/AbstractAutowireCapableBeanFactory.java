@@ -516,6 +516,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			/**
+			 * 通过Bean的后置处理器来进行后置处理生成代理对象，一般情况下在此处不会生成代理对象
+			 * 为什么不能生成代理对象，不管是JDK代理还是CGLIB代理都不会在此处进行代理，因为我们的真实对象还没有生成，所以在这里不会生成代理对象
+			 * 这一步是AOP和事务的关键，因为在这里解析了AOP切面信息进行缓存
+			 */
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
@@ -605,7 +610,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
+			// 属性赋值
 			populateBean(beanName, mbd, instanceWrapper);
+			// 进行对象初始化操作(可能产生代理对象)
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1772,15 +1779,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			// 若我们的bean实现了XXXAware接口进行方法的回调
 			invokeAwareMethods(beanName, bean);
 		}
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 调用我们的bean的后置处理器的postProcessorsBeforeInitialization方法  @PostCust方法
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			// 调用初始化方法
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {

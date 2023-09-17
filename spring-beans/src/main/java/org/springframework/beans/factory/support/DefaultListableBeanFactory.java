@@ -337,6 +337,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of remaining BeanFactory methods
 	//---------------------------------------------------------------------
 
+	/**
+	 * 该方法是一个空壳方法，没有任何实现逻辑，真正的逻辑调用在do
+	 */
 	@Override
 	public <T> T getBean(Class<T> requiredType) throws BeansException {
 		return getBean(requiredType, (Object[]) null);
