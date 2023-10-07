@@ -23,6 +23,8 @@ import org.springframework.lang.Nullable;
 /**
  * Strategy interface for resolving messages, with support for the parameterization
  * and internationalization of such messages.
+ * 注：MessageSource是一个解析信息的策略接口，能基于该接口实现信息的国际化及参数化能力。
+ * (国际化：不同Locale地域，可以返回不同信息；参数化：针对信息中预设的占位符进行动态替换)
  *
  * <p>Spring provides two out-of-the-box implementations for production:
  * <ul>
@@ -31,6 +33,7 @@ import org.springframework.lang.Nullable;
  * <li>{@link org.springframework.context.support.ReloadableResourceBundleMessageSource}:
  * highly configurable, in particular with respect to reloading message definitions.
  * </ul>
+ * 注：spring提供了两个消息具体实现类：ResourceBundleMessageSource、ReloadableResourceBundleMessageSource
  *
  * @author Rod Johnson
  * @author Juergen Hoeller

@@ -606,6 +606,7 @@ public abstract class ObjectUtils {
 	 * @param obj the object (may be {@code null})
 	 * @return the object's identity as String representation,
 	 * or an empty String if the object was {@code null}
+	 * 注：返回对象身份字符串，由类全路径 + hashcode组合而成。
 	 */
 	public static String identityToString(@Nullable Object obj) {
 		if (obj == null) {
@@ -618,6 +619,8 @@ public abstract class ObjectUtils {
 
 	/**
 	 * Return a hex String form of an object's identity hash code.
+	 * 注：返回对象hashCode的十六进制格式
+	 * 参考资料：https://www.jianshu.com/p/24fa4bdb9b9d
 	 * @param obj the object
 	 * @return the object's identity code in hex notation
 	 */

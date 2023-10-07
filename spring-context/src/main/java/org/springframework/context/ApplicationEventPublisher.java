@@ -18,8 +18,10 @@ package org.springframework.context;
 
 /**
  * Interface that encapsulates event publication functionality.
+ * 注释：ApplicationEventPublisher是一个封装了事件发布的函数式接口
  *
  * <p>Serves as a super-interface for {@link ApplicationContext}.
+ * # 应用上下文ApplicationContext接口也继承了发布接口，因此上下文实例也具有发布事件能力。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll

@@ -89,6 +89,8 @@ import org.springframework.util.ReflectionUtils;
  * interface. Doesn't mandate the type of storage used for configuration; simply
  * implements common context functionality. Uses the Template Method design pattern,
  * requiring concrete subclasses to implement abstract methods.
+ * 注：spring上下文抽象实现类。① 抽象实现类不强制要求配置的存储类型。② 抽象类仅仅实现了通用的上下文功能。
+ * ③ 上下文抽象类使用模版方法设计模式，具体的实现细节由子类实现。
  *
  * <p>In contrast to a plain BeanFactory, an ApplicationContext is supposed
  * to detect special beans defined in its internal bean factory:
@@ -97,6 +99,8 @@ import org.springframework.util.ReflectionUtils;
  * {@link org.springframework.beans.factory.config.BeanPostProcessor BeanPostProcessors},
  * and {@link org.springframework.context.ApplicationListener ApplicationListeners}
  * which are defined as beans in the context.
+ * 注：与普通bean工厂相比，应用上下文会侦测内部特殊的bean，
+ * 比如bean工厂后置处理器，bean后置处理器，应用监听器等，这些类定义在上下文内部并且会被自动注册。
  *
  * <p>A {@link org.springframework.context.MessageSource} may also be supplied
  * as a bean in the context, with the name "messageSource"; otherwise, message
@@ -105,6 +109,8 @@ import org.springframework.util.ReflectionUtils;
  * of type {@link org.springframework.context.event.ApplicationEventMulticaster}
  * in the context; otherwise, a default multicaster of type
  * {@link org.springframework.context.event.SimpleApplicationEventMulticaster} will be used.
+ * 注：MessageSource也会被作为spring上下文中的bean进行提供，bean名为"messageSource"。否则，消息解析讲委托给父上下文。
+ * 此外，应用时间的多播器(ApplicationEventMulticaster)也可以提供，多播器的默认类型为SimpleApplicationEventMulticaster。
  *
  * <p>Implements resource loading by extending
  * {@link org.springframework.core.io.DefaultResourceLoader}.
@@ -112,6 +118,8 @@ import org.springframework.util.ReflectionUtils;
  * (supporting full class path resource names that include the package path,
  * e.g. "mypackage/myresource.dat"), unless the {@link #getResourceByPath}
  * method is overridden in a subclass.
+ * 注：抽象应用上下文通过继承DefaultResourceLoader来实现资源加载。
+ * 除非在(DefaultResourceLoader)子类中重写getResourceByPath方法，否则会将非URL资源路径视为类路径资源。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -134,6 +142,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Name of the MessageSource bean in the factory.
 	 * If none is supplied, message resolution is delegated to the parent.
+	 * 注：当前bean工厂中消息资源的bean名称。如果没有提供消息，消息解析讲委托给父节点。
 	 * @see MessageSource
 	 */
 	public static final String MESSAGE_SOURCE_BEAN_NAME = "messageSource";
@@ -141,6 +150,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Name of the LifecycleProcessor bean in the factory.
 	 * If none is supplied, a DefaultLifecycleProcessor is used.
+	 * 注：当前bean工厂的生命周期处理器的bean名称。
+	 * 如果用户未指定，则默认为DefaultLifecycleProcessor。
 	 * @see org.springframework.context.LifecycleProcessor
 	 * @see org.springframework.context.support.DefaultLifecycleProcessor
 	 */
@@ -149,6 +160,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Name of the ApplicationEventMulticaster bean in the factory.
 	 * If none is supplied, a default SimpleApplicationEventMulticaster is used.
+	 * 注：当前bean工厂的应用事件广播器的bean名称
+	 * 如果没有提供，则使用默认的SimpleApplicationEventMulticaster。
 	 * @see org.springframework.context.event.ApplicationEventMulticaster
 	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
 	 */
@@ -158,11 +171,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Boolean flag controlled by a {@code spring.spel.ignore} system property that instructs Spring to
 	 * ignore SpEL, i.e. to not initialize the SpEL infrastructure.
 	 * <p>The default is "false".
+	 * 注：根据系统属性（"spring.spel.ignore"）来判断是否忽略spel表达式。
 	 */
 	private static final boolean shouldIgnoreSpel = SpringProperties.getFlag("spring.spel.ignore");
 
 	/**
 	 * Whether this environment lives within a native image.
+	 * 注：当前环境是否在本地镜像中（如：GraalVM, https://zhuanlan.zhihu.com/p/137836206），这种情况无法动态加载织入且只能使用JDK动态代理。
 	 * Exposed as a private static field rather than in a {@code NativeImageDetector.inNativeImage()} static method due to https://github.com/oracle/graal/issues/2594.
 	 * @see <a href="https://github.com/oracle/graal/blob/master/sdk/src/org.graalvm.nativeimage/src/org/graalvm/nativeimage/ImageInfo.java">ImageInfo.java</a>
 	 */
@@ -172,50 +187,77 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	static {
 		// Eagerly load the ContextClosedEvent class to avoid weird classloader issues
 		// on application shutdown in WebLogic 8.1. (Reported by Dustin Woods.)
+		// 注：提前加载ContextClosedEvent类，以避免在应用关闭时出现意外的类加载器问题
 		ContextClosedEvent.class.getName();
 	}
 
 
-	/** Logger used by this class. Available to subclasses. */
+	/** Logger used by this class. Available to subclasses.
+	 * 注：当前应用上下文实例日志对象。权限为protected。
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** Unique id for this context, if any. */
+	/** Unique id for this context, if any.
+	 * 注：当前上下文实例的唯一ID
+	 */
 	private String id = ObjectUtils.identityToString(this);
 
-	/** Display name. */
+	/** Display name.
+	 * 注：当前上下文的展示名称
+	 */
 	private String displayName = ObjectUtils.identityToString(this);
 
-	/** Parent context. */
+	/** Parent context.
+	 * 注：当前应用上下文的父应用上下文
+	 */
 	@Nullable
 	private ApplicationContext parent;
 
-	/** Environment used by this context. */
+	/** Environment used by this context.
+	 * 注：当前应用上下文持有的可配置环境对象
+	 */
 	@Nullable
 	private ConfigurableEnvironment environment;
 
-	/** BeanFactoryPostProcessors to apply on refresh. */
+	/** BeanFactoryPostProcessors to apply on refresh. 、
+	 * 注：当前应用上下文持有的所有bean工厂后置处理器
+	 */
 	private final List<BeanFactoryPostProcessor> beanFactoryPostProcessors = new ArrayList<>();
 
-	/** System time in milliseconds when this context started. */
+	/** System time in milliseconds when this context started.
+	 * 注：当前应用上下文启动的系统时间(毫秒级)
+	 */
 	private long startupDate;
 
-	/** Flag that indicates whether this context is currently active. */
+	/** Flag that indicates whether this context is currently active.
+	 * 注：用于标识当前上下文是否为激活状态
+	 */
 	private final AtomicBoolean active = new AtomicBoolean();
 
-	/** Flag that indicates whether this context has been closed already. */
+	/** Flag that indicates whether this context has been closed already.
+	 * 注：用于标识当前上下文是否已经关闭
+	 */
 	private final AtomicBoolean closed = new AtomicBoolean();
 
-	/** Synchronization monitor for the "refresh" and "destroy". */
+	/** Synchronization monitor for the "refresh" and "destroy".
+	 * 注：用于刷新、销毁操作的同步锁
+	 */
 	private final Object startupShutdownMonitor = new Object();
 
-	/** Reference to the JVM shutdown hook, if registered. */
+	/** Reference to the JVM shutdown hook, if registered.
+	 * 注：用于JVM关闭回调
+	 */
 	@Nullable
 	private Thread shutdownHook;
 
-	/** ResourcePatternResolver used by this context. */
+	/** ResourcePatternResolver used by this context.
+	 * 注：spring上下文中的资源路径样式解析器
+	 */
 	private ResourcePatternResolver resourcePatternResolver;
 
-	/** LifecycleProcessor for managing the lifecycle of beans within this context. */
+	/** LifecycleProcessor for managing the lifecycle of beans within this context.
+	 * 注：
+	 */
 	@Nullable
 	private LifecycleProcessor lifecycleProcessor;
 

@@ -30,16 +30,20 @@ import org.springframework.lang.Nullable;
  * interface to be implemented by bean factories that are capable of
  * autowiring, provided that they want to expose this functionality for
  * existing bean instances.
+ * 注：AutowireCapableBeanFactory是BeanFactory的子接口，提供了向已经存在的bean工厂实例内自动装载第三方bean
  *
  * <p>This subinterface of BeanFactory is not meant to be used in normal
  * application code: stick to {@link org.springframework.beans.factory.BeanFactory}
  * or {@link org.springframework.beans.factory.ListableBeanFactory} for
  * typical use cases.
+ * 注：虽然这是BeanFactory的子接口，但并不意味着要在正常的代码中使用它。
+ * 还是坚持使用BeanFactory或者ListableBeanFactory
  *
  * <p>Integration code for other frameworks can leverage this interface to
  * wire and populate existing bean instances that Spring does not control
  * the lifecycle of. This is particularly useful for WebWork Actions and
  * Tapestry Page objects, for example.
+ * 注：对于不受spring控制的第三方框架的对象可以通过该接口与spring容器整合。
  *
  * <p>Note that this interface is not implemented by
  * {@link org.springframework.context.ApplicationContext} facades,
@@ -47,11 +51,15 @@ import org.springframework.lang.Nullable;
  * from an application context too, accessible through ApplicationContext's
  * {@link org.springframework.context.ApplicationContext#getAutowireCapableBeanFactory()}
  * method.
+ * 注：该接口没有被应用上下文表面上实现或继承，因为应用程序本身几乎用不到它。
+ * 既然是表名，也就是说，通过应用上下文的getAutowireCapableBeanFactory方法仍可以获得该接口实例以实现第三方装配。
  *
  * <p>You may also implement the {@link org.springframework.beans.factory.BeanFactoryAware}
  * interface, which exposes the internal BeanFactory even when running in an
  * ApplicationContext, to get access to an AutowireCapableBeanFactory:
  * simply cast the passed-in BeanFactory to AutowireCapableBeanFactory.
+ * 注：除了使用应用上下文实例提供的方法来获取该接口实例之外，你也可以在Bean中实现BeanFactoryAware接口，
+ * 应用上下文实例启动时会调用该接口方法。你可以检查方法参数中的BeanFactory来获得AutowireCapableBeanFactory实例。
  *
  * @author Juergen Hoeller
  * @since 04.12.2003
