@@ -252,44 +252,60 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/** ResourcePatternResolver used by this context.
 	 * 注：spring上下文中的资源路径样式解析器
+	 * // TODO: 2023/10/8 疑问：Resolver和ResourceLoader的关系是什么？装饰？
 	 */
 	private ResourcePatternResolver resourcePatternResolver;
 
 	/** LifecycleProcessor for managing the lifecycle of beans within this context.
-	 * 注：
+	 * 注：spring上下文中生命周期处理器，用于管理bean的生命周期
 	 */
 	@Nullable
 	private LifecycleProcessor lifecycleProcessor;
 
-	/** MessageSource we delegate our implementation of this interface to. */
+	/** MessageSource we delegate our implementation of this interface to.
+	 * 注：spring消息源的具体实现类对象
+	 */
 	@Nullable
 	private MessageSource messageSource;
 
-	/** Helper class used in event publishing. */
+	/** Helper class used in event publishing.
+	 * 注：事件发布的助手类
+	 */
 	@Nullable
 	private ApplicationEventMulticaster applicationEventMulticaster;
 
-	/** Statically specified listeners. */
+	/** Statically specified listeners.
+	 * 注：静态的(如何理解？)、指定的事件监听器集合
+	 */
 	private final Set<ApplicationListener<?>> applicationListeners = new LinkedHashSet<>();
 
-	/** Local listeners registered before refresh. */
+	/** Local listeners registered before refresh.
+	 * 注：在刷新之前已经注册的内部监听器
+	 */
 	@Nullable
 	private Set<ApplicationListener<?>> earlyApplicationListeners;
 
-	/** ApplicationEvents published before the multicaster setup. */
+	/** ApplicationEvents published before the multicaster setup.
+	 * 注：在多播器启动之前的应用事件集合
+	 */
 	@Nullable
 	private Set<ApplicationEvent> earlyApplicationEvents;
 
 
 	/**
 	 * Create a new AbstractApplicationContext with no parent.
+	 * 注：创建一个没有父应用的应用上下文对象
 	 */
 	public AbstractApplicationContext() {
+		// 初始化资源路径解析器
+		// 【getResourcePatternResolver是一个模版方法模式的体现，默认为PathMatchingResourcePatternResolver，可由子类实现】
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
 	/**
 	 * Create a new AbstractApplicationContext with the given parent context.
+	 * 注：创建一个应用上下文对象，并指定父应用上下文。
+	 *
 	 * @param parent the parent context
 	 */
 	public AbstractApplicationContext(@Nullable ApplicationContext parent) {
@@ -306,6 +322,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Set the unique id of this application context.
 	 * <p>Default is the object id of the context instance, or the name
 	 * of the context bean if the context is itself defined as a bean.
+	 * 注：设置当前应用上下文唯一ID
 	 * @param id the unique id of the context
 	 */
 	@Override
@@ -327,6 +344,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Set a friendly name for this context.
 	 * Typically done during initialization of concrete context implementations.
 	 * <p>Default is the object id of the context instance.
+	 * 注：设置当前应用上下文展示Name
 	 */
 	public void setDisplayName(String displayName) {
 		Assert.hasLength(displayName, "Display name must not be empty");
@@ -358,6 +376,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * default with this method is one option but configuration through {@link
 	 * #getEnvironment()} should also be considered. In either case, such modifications
 	 * should be performed <em>before</em> {@link #refresh()}.
+	 * 注：为当前应用上下文设置环境对象。
+	 * 环境对象的默认值由createEnvironment()方法决定，子类可以重新这个方法来替换默认环境对象，
+	 * 也可以通过setEnvironment方法来覆盖默认环境对象。但无论哪一种方法，都应该在refresh方法之前执行。
 	 * @see org.springframework.context.support.AbstractApplicationContext#createEnvironment
 	 */
 	@Override
@@ -370,6 +391,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * form, allowing for further customization.
 	 * <p>If none specified, a default environment will be initialized via
 	 * {@link #createEnvironment()}.
+	 * 注：返回当前应用上下文的可配置环境对象。可配置就意味着允许进一步的修改环境对象。
+	 * 如果没有通过setEnvironment设置环境对象，就会调用createEnvironment()返回默认的环境对象。
 	 */
 	@Override
 	public ConfigurableEnvironment getEnvironment() {
@@ -383,6 +406,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create and return a new {@link StandardEnvironment}.
 	 * <p>Subclasses may override this method in order to supply
 	 * a custom {@link ConfigurableEnvironment} implementation.
+	 * 注：创建并返回默认StandardEnvironment环境对象
+	 * 模版模式基本方法，子类可以重写改方法提供一个自定义的可配置环境对象
 	 */
 	protected ConfigurableEnvironment createEnvironment() {
 		return new StandardEnvironment();
@@ -391,6 +416,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Return this context's internal bean factory as AutowireCapableBeanFactory,
 	 * if already available.
+	 * 注：返回当前上下文内部的可配置Bean工厂
 	 * @see #getBeanFactory()
 	 */
 	@Override
@@ -400,6 +426,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Return the timestamp (ms) when this context was first loaded.
+	 * 注：返回上下文启动的时间戳
 	 */
 	@Override
 	public long getStartupDate() {
@@ -504,11 +531,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * into Resource instances. Default is a
 	 * {@link org.springframework.core.io.support.PathMatchingResourcePatternResolver},
 	 * supporting Ant-style location patterns.
+	 * 注：返回spring上下文用于将资源路径解析为Resource对象的解析器对象。
+	 * 默认是支持解析Ant资源路径样式的PathMatchingResourcePatternResolver类对象。
 	 * <p>Can be overridden in subclasses, for extended resolution strategies,
 	 * for example in a web environment.
+	 * 注：资源路径解析器可以由子类实现当前方法以进行扩展。
 	 * <p><b>Do not call this when needing to resolve a location pattern.</b>
 	 * Call the context's {@code getResources} method instead, which
 	 * will delegate to the ResourcePatternResolver.
+	 * 注：你可以调用getResources方法来解析资源路径样式获取Resource对象。
+	 * getResources内部就是用这里返回的解析器来解析路径的。
 	 * @return the ResourcePatternResolver for this context
 	 * @see #getResources
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
@@ -528,6 +560,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * {@linkplain ConfigurableEnvironment#merge(ConfigurableEnvironment) merged} with
 	 * this (child) application context environment if the parent is non-{@code null} and
 	 * its environment is an instance of {@link ConfigurableEnvironment}.
+	 * 注：设置父应用上下文
+	 * 如果父应用上下文的环境为可配置类，则将父应用环境配置合并至子应用上下文中
 	 * @see ConfigurableEnvironment#merge(ConfigurableEnvironment)
 	 */
 	@Override
