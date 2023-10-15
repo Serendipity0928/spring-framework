@@ -18,7 +18,7 @@ public class Test {
 		System.out.println(context.getParent());
 		System.out.println(context.getAutowireCapableBeanFactory());
 
-		context.getResources();
+//		context.addBeanFactoryPostProcessor();
 
 		context.close();
 	}

@@ -132,9 +132,12 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
 	/**
 	 * Specify the resolution strategy for expressions in bean definition values.
+	 * 注：指定Bean定义中value的解析器
 	 * <p>There is no expression support active in a BeanFactory by default.
 	 * An ApplicationContext will typically set a standard expression strategy
 	 * here, supporting "#{...}" expressions in a Unified EL compatible style.
+	 * 注：默认情况Bean工厂没有相应表达式的支持。
+	 * 在应用上下文会通常使用标准解析策略来支持spring统一的表达式语言。
 	 * @since 3.0
 	 */
 	void setBeanExpressionResolver(@Nullable BeanExpressionResolver resolver);
@@ -162,6 +165,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
 	/**
 	 * Add a PropertyEditorRegistrar to be applied to all bean creation processes.
+	 * 注：增加一个应用于所有Bean创建过程的属性编辑注册器
 	 * <p>Such a registrar creates new PropertyEditor instances and registers them
 	 * on the given registry, fresh for each bean creation attempt. This avoids
 	 * the need for synchronization on custom editors; hence, it is generally
