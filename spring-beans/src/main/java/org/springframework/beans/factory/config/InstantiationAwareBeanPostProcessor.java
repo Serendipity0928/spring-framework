@@ -67,7 +67,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * or {@code null} to proceed with default instantiation
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessAfterInstantiation
-	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
+	 * @see org.springframework.beans.factory.support.AbstractBeanDepostProcessBeforeInstantiationfinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
 	 */
 	@Nullable

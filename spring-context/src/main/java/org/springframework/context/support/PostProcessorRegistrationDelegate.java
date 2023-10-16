@@ -51,6 +51,7 @@ import org.springframework.lang.Nullable;
  */
 final class PostProcessorRegistrationDelegate {
 
+	// 注：作为静态工具类使用
 	private PostProcessorRegistrationDelegate() {
 	}
 
@@ -242,7 +243,7 @@ final class PostProcessorRegistrationDelegate {
 
 		// Clear cached merged bean definitions since the post-processors might have
 		// modified the original metadata, e.g. replacing placeholders in values...
-		// TODO: 2023/10/15 clearMetadataCache
+		// 注：清楚合并bean定义的缓存。具体作用后续再研究：https://blog.csdn.net/zzzzzyyyz/article/details/117049402
 		beanFactory.clearMetadataCache();
 	}
 
@@ -315,6 +316,7 @@ final class PostProcessorRegistrationDelegate {
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 
+	// 注：针对后置处理器进行排序，排序优先根据bean工厂提供的排序器，默认为OrderComparator实例。
 	private static void sortPostProcessors(List<?> postProcessors, ConfigurableListableBeanFactory beanFactory) {
 		// Nothing to sort?
 		if (postProcessors.size() <= 1) {
@@ -332,6 +334,7 @@ final class PostProcessorRegistrationDelegate {
 
 	/**
 	 * Invoke the given BeanDefinitionRegistryPostProcessor beans.
+	 * 注：调用bean定义注册后置处理器对应的方法
 	 */
 	private static void invokeBeanDefinitionRegistryPostProcessors(
 			Collection<? extends BeanDefinitionRegistryPostProcessor> postProcessors, BeanDefinitionRegistry registry) {
@@ -343,6 +346,7 @@ final class PostProcessorRegistrationDelegate {
 
 	/**
 	 * Invoke the given BeanFactoryPostProcessor beans.
+	 * 注：调用bean工厂后置处理器对应的方法
 	 */
 	private static void invokeBeanFactoryPostProcessors(
 			Collection<? extends BeanFactoryPostProcessor> postProcessors, ConfigurableListableBeanFactory beanFactory) {
