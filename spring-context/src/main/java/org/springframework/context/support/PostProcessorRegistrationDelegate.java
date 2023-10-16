@@ -247,19 +247,35 @@ final class PostProcessorRegistrationDelegate {
 		beanFactory.clearMetadataCache();
 	}
 
+	/**
+	 * 注：应用上下文自动侦测Bean容器中的Bean后置处理器实例，并将这部分处理器实例化后添加入Bean后置处理器缓存集合中-即AbstractBeanFactory#beanPostProcessors。
+	 * 使用beanFactory的addBeanPostProcessor等方法是直接手动添加入Bean后置处理器缓存集合中。
+	 * 这里"register"的含义是指，已经将其bean定义注册容器中的bean, 现在是自动侦测并实例化，缓存在指定集合中。
+	 * @param beanFactory：bean工厂
+	 * @param applicationContext：当前应用上下文
+	 */
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
-
+		// 注：通过beanFactory的getBeanNamesForType方法获取BeanPostProcessor类型的Bean，实际上即使容器已注入的Bean后置处理器，但尚未被实例化
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
+		/**
+		 * 注：这里注册一个BeanPostProcessorChecker后置处理器实例，相关作用见下面类注释即可。
+		 * Bean后置处理检查器需要Bean容器中总共的Bean后置处理器个数，以便来判断是否所有Bean后置处理器全部初始化完毕状态。
+		 * Bean后置处理器个数分为三个部分：
+		 * 1. 当前Bean容器已经初始化的Bean后置处理器个数-也即缓存集合的数量
+		 * 2. 1，是指Bean后置处理检查器本身
+		 * 3. 容器中存在但尚未被初始化的后置处理器个数。
+		 */
 		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
 		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
+		// TODO: 2023/10/16
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
 		List<String> orderedPostProcessorNames = new ArrayList<>();
@@ -308,11 +324,13 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
+		// TODO: 2023/10/16 为什么要放到最后
 		sortPostProcessors(internalPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
+//		ApplicationListenerDetector
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 
@@ -358,12 +376,19 @@ final class PostProcessorRegistrationDelegate {
 
 	/**
 	 * Register the given BeanPostProcessor beans.
+	 * 注：将自动侦测的Bean后置处理器实例添加(注册)到Bean工厂(容器)的缓存集合中，即AbstractBeanFactory#beanPostProcessors
+	 * 这里"register"可能存在歧义，像是注册到容器中，实际已经是容器中的bean,现在是自动侦测并缓存在指定集合中。
 	 */
 	private static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanPostProcessor> postProcessors) {
 
 		if (beanFactory instanceof AbstractBeanFactory) {
 			// Bulk addition is more efficient against our CopyOnWriteArrayList there
+			/**
+			 * 注：支持批量添加Bean后置处理器的Bean工厂(容器)，则使用批量添加至Bean后置处理器缓存中
+			 * Bean后置处理器缓存集合实际类型为CopyOnWriteArrayList，CopyOnWriteArrayList的批量添加操作效率更高
+			 * (https://blog.csdn.net/Jakob_Hu/article/details/101473368)
+			 */
 			((AbstractBeanFactory) beanFactory).addBeanPostProcessors(postProcessors);
 		}
 		else {
@@ -378,6 +403,11 @@ final class PostProcessorRegistrationDelegate {
 	 * BeanPostProcessor that logs an info message when a bean is created during
 	 * BeanPostProcessor instantiation, i.e. when a bean is not eligible for
 	 * getting processed by all BeanPostProcessors.
+	 * 注：由于Bean工厂后置处理器的作用声明周期应该在所有业务Bean的初始化之前，spring提供了BeanPostProcessorChecker工具类做了相应日志监控。
+	 * BeanPostProcessorChecker也是一个Bean后置处理器。当一个bean初始化后，
+	 * 该后置处理器就会检查是否存在Bean后置处理器还没有初始化完就初始化了业务Bean的情况，如果存在这种情况就打印日志，
+	 * 因为这个业务Bean可能不会被所有Bean后置处理器处理。
+	 * - 其实这种情况是可能存在的，比如用户自定义的后置处理器依赖容器中某个业务bean。
 	 */
 	private static final class BeanPostProcessorChecker implements BeanPostProcessor {
 
@@ -389,6 +419,7 @@ final class PostProcessorRegistrationDelegate {
 
 		public BeanPostProcessorChecker(ConfigurableListableBeanFactory beanFactory, int beanPostProcessorTargetCount) {
 			this.beanFactory = beanFactory;
+			// 注：传入bean容器所有的后置处理器个数，用于后续校验是否所有后置处理器均被初始化了。
 			this.beanPostProcessorTargetCount = beanPostProcessorTargetCount;
 		}
 
@@ -399,9 +430,16 @@ final class PostProcessorRegistrationDelegate {
 
 		@Override
 		public Object postProcessAfterInitialization(Object bean, String beanName) {
+			/**
+			 * 注：当一个bean初始化后，需要校验以下几个条件，来判断是否存在可能无法被所有bean后置处理器处理的bean
+			 * 1. 当前bean不是Bean后置处理器
+			 * 2. 当前bean不是spring内部基础bean，也即是业务bean(外部注册入容器中)
+			 * 3. 所有bean后置处理器仍未被初始化
+			 * 当同时满足以上三个条件后，就需要打印info级别的log日志，通知spring使用者！
+			 */
 			if (!(bean instanceof BeanPostProcessor) && !isInfrastructureBean(beanName) &&
 					this.beanFactory.getBeanPostProcessorCount() < this.beanPostProcessorTargetCount) {
-				if (logger.isInfoEnabled()) {
+				if (logger.isInfoEnabled()) {		// 打印info日志
 					logger.info("Bean '" + beanName + "' of type [" + bean.getClass().getName() +
 							"] is not eligible for getting processed by all BeanPostProcessors " +
 							"(for example: not eligible for auto-proxying)");
@@ -410,9 +448,11 @@ final class PostProcessorRegistrationDelegate {
 			return bean;
 		}
 
+		// 注：判断当前bean是否为spring内部基础bean
 		private boolean isInfrastructureBean(@Nullable String beanName) {
 			if (beanName != null && this.beanFactory.containsBeanDefinition(beanName)) {
 				BeanDefinition bd = this.beanFactory.getBeanDefinition(beanName);
+				// 通过bean定义中的role标识-ROLE_INFRASTRUCTURE，判断是否为内部基础bean
 				return (bd.getRole() == RootBeanDefinition.ROLE_INFRASTRUCTURE);
 			}
 			return false;
