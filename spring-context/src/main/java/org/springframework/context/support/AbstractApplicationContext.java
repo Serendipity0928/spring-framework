@@ -270,7 +270,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	private MessageSource messageSource;
 
 	/** Helper class used in event publishing.
-	 * 注：事件发布的助手类
+	 * 注：事件发布的助手类，默认为
+	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
 	 */
 	@Nullable
 	private ApplicationEventMulticaster applicationEventMulticaster;
@@ -667,16 +668,19 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				// 注：8. 初始化当前应用上下文的多播器bean
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				// 注：9. 子应用文类可以实现该方法初始化一些其他特殊bean
 				onRefresh();
 
 				// Check for listener beans and register them.
+				// 注：10. 侦测事件监听器bean实例，并且注册到多播器中，触发早期事件传播
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
-				/* 2022/1/2: 初始化剩下的所有的单实例(非懒加载的) */
+				/* 注: 11. 初始化剩下的所有的单实例(非懒加载的) */
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -760,7 +764,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Replace any stub property sources with actual instances.
 	 * 注：使用实际实例替换属性源【引用Web项目】
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
-	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
+	 * // @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
 	 */
 	protected void initPropertySources() {
 		// For subclasses: do nothing by default.
@@ -914,18 +918,19 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void initMessageSource() {
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
-		// 注：判断当前应用上下文的bean容器中是否包含消息源bean定义-messageSource
+		// 注：判断当前应用上下文的bean容器中是否包含消息源bean定义-messageSource，即是否用户设置了消息源
 		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
 			// 注：实例化messageSource的bean实力
 			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
 			// Make MessageSource aware of parent MessageSource.
-			// 如果当前应用上下文存在父级上下文，并且消息源是继承性消息源，下面就会
+			// 注：如果当前应用上下文存在父级上下文，并且消息源是继承类型的消息源，下面就会初始化父消息源对象。
+			// 疑问？消息源的解析，如果当前上下文无法解析，须满足下面两个条件，才会通过父上下文持有的消息源进行解析吧
 			if (this.parent != null && this.messageSource instanceof HierarchicalMessageSource) {
 				HierarchicalMessageSource hms = (HierarchicalMessageSource) this.messageSource;
 				if (hms.getParentMessageSource() == null) {
 					// Only set parent context as parent MessageSource if no parent MessageSource
 					// registered already.
-					//
+					// 注：如果父上下文没有持有消息源，这里就是设置父上下文本身
 					hms.setParentMessageSource(getInternalParentMessageSource());
 				}
 			}
@@ -935,9 +940,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 		else {
 			// Use empty MessageSource to be able to accept getMessage calls.
+			// 注：如果没有指定上下文的消息源，这里就使用一个空的消息源
 			DelegatingMessageSource dms = new DelegatingMessageSource();
+			// 注：DelegatingMessageSource也是一个继承类型的消息源，这里也需要设置父上下文消息源。
 			dms.setParentMessageSource(getInternalParentMessageSource());
 			this.messageSource = dms;
+			// 这里手动向Bean容器中注入一个messageSource实例Bean
 			beanFactory.registerSingleton(MESSAGE_SOURCE_BEAN_NAME, this.messageSource);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No '" + MESSAGE_SOURCE_BEAN_NAME + "' bean, using [" + this.messageSource + "]");
@@ -948,11 +956,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Initialize the ApplicationEventMulticaster.
 	 * Uses SimpleApplicationEventMulticaster if none defined in the context.
+	 * 注：初始化应用事件多播器
+	 * 如果应用没有在容器中注入applicationEventMulticaster实例bean，就使用默认的多播器-SimpleApplicationEventMulticaster
 	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
 	 */
 	protected void initApplicationEventMulticaster() {
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		// 注：判断应用是否存在applicationEventMulticaster的bean
 		if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
+			// 注：初始化多播器实例
 			this.applicationEventMulticaster =
 					beanFactory.getBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
 			if (logger.isTraceEnabled()) {
@@ -960,7 +972,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			}
 		}
 		else {
+			// 注：如果应用没有指定多播器，就是用默认的SimpleApplicationEventMulticaster多播器
 			this.applicationEventMulticaster = new SimpleApplicationEventMulticaster(beanFactory);
+			// 注：将默认多播器注入spring容器中
 			beanFactory.registerSingleton(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, this.applicationEventMulticaster);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No '" + APPLICATION_EVENT_MULTICASTER_BEAN_NAME + "' bean, using " +
@@ -999,6 +1013,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Template method which can be overridden to add context-specific refresh work.
 	 * Called on initialization of special beans, before instantiation of singletons.
 	 * <p>This implementation is empty.
+	 * 注：这是一个模版模式的基本方法，子上下文类可以重写此方法用于在实例化bean之前初始化一些特殊的bean。
 	 * @throws BeansException in case of errors
 	 * @see #refresh()
 	 */
@@ -1009,23 +1024,39 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Add beans that implement ApplicationListener as listeners.
 	 * Doesn't affect other listeners, which can be added without being beans.
+	 * 注：将所有的应用监听器注册到多播器中，此时多播器已经是实例化了。
+	 * 注意此注册是到多播器中，并非注册到容器的意思。
 	 */
 	protected void registerListeners() {
 		// Register statically specified listeners first.
+		/**
+		 * 注：首先将静态指定的监听器注册到多播器中。
+		 * 什么叫静态呢？我觉得可以理解为多播器实例化之前向应用上下文添加的应用监听器就都缓存在applicationListeners集合中。
+		 * 多播器实例化之后，向应用上下文添加的监听器直接注册到了多播器了。
+		 */
 		for (ApplicationListener<?> listener : getApplicationListeners()) {
 			getApplicationEventMulticaster().addApplicationListener(listener);
 		}
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
+		/**
+		 * 注：这里获取Bean容器中所有的应用事件beanName，并将beanName添加到多播器中。
+		 * 1. 为什么这里不是获取bean实例而是beanName
+		 *  实际上，容器内注册所有监听器bean实例注入多播器都是由ApplicationListenerDetector这个后置处理器实例来完成的。
+		 *  如果这里实例化bean并且还执行添加到多播器中，那可能会导致一个事件被多个相同类型的监听器消费，不符合预期。
+		 * 2. 这里向多播器添加beanName而不是bean，会不会导致事件无法被beanName对应的监听器消费？
+		 *   注入到多播器的beanName和bean分别由两个不同的set缓存起来，在发布事件时，对于beanName就会调用bean容器对应方法进行初始化。
+		 */
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
 		}
 
 		// Publish early application events now that we finally have a multicaster...
+		// 注：在多播器尚未实例化之前，应用上下文发布的事件会暂存在earlyApplicationEvents缓存中，那么此处就会将由多播器传播这些事件
 		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
-		this.earlyApplicationEvents = null;
+		this.earlyApplicationEvents = null;		// 注：这是一个多播器是否已实例化的表示，null意味着后续的事件直接交给多播器
 		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {
 			for (ApplicationEvent earlyEvent : earlyEventsToProcess) {
 				getApplicationEventMulticaster().multicastEvent(earlyEvent);
@@ -1530,6 +1561,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Return the internal message source of the parent context if it is an
 	 * AbstractApplicationContext too; else, return the parent context itself.
+	 * 注：返回当前应用的父上下文内部的消息源。
+	 * 当然前提是父上下文也是AbstractApplicationContext类型，否则返回父上下文本身。
 	 */
 	@Nullable
 	protected MessageSource getInternalParentMessageSource() {
