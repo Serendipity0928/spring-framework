@@ -275,7 +275,12 @@ final class PostProcessorRegistrationDelegate {
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
-		// TODO: 2023/10/16
+		/**
+		 * 注：下面将容器中尚未实例化的Bean后置处理器按照一定排序规则进行实例化，并添加仅缓存集合中。
+		 * bean后置处理器的实例化分为三个部分，实现了PriorityOrdered接口、Ordered接口、以及其他
+		 * 之所以分为三个部分顺序处理，这将影响各个bean后置处理器在缓存集合的顺序，进而影响处理bean实例的顺序。
+		 * - 此外，internalPostProcessors用于存储spring内部的MergedBeanDefinitionPostProcessor特殊类型的后置处理器。
+		 */
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
 		List<String> orderedPostProcessorNames = new ArrayList<>();
@@ -289,6 +294,11 @@ final class PostProcessorRegistrationDelegate {
 				}
 			}
 			else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+				/**
+				 * 注：为什么后面两个集合只存储name，而不是存储bean实例呢？
+				 * 因为后置处理器实例本身也是bean, bean的初始化过程会调用后置处理器，此处只存储name，
+				 * 使得优先级较低的bean初始化时可以被优先级较高的后置处理器处理。
+				 */
 				orderedPostProcessorNames.add(ppName);
 			}
 			else {
@@ -297,10 +307,12 @@ final class PostProcessorRegistrationDelegate {
 		}
 
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
+		// 注：首先将实现了PriorityOrdered的bean后置处理器按照一定的顺序规则顺序注册入bean工厂的缓存集合中
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
 
 		// Next, register the BeanPostProcessors that implement Ordered.
+		// 注：将实现了Ordered的bean后置处理器按照一定的顺序规则顺序注册入bean工厂的缓存集合中
 		List<BeanPostProcessor> orderedPostProcessors = new ArrayList<>(orderedPostProcessorNames.size());
 		for (String ppName : orderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -313,6 +325,7 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, orderedPostProcessors);
 
 		// Now, register all regular BeanPostProcessors.
+		// 注：将常规的所有后置处理器注册入bean工厂的缓存集合中
 		List<BeanPostProcessor> nonOrderedPostProcessors = new ArrayList<>(nonOrderedPostProcessorNames.size());
 		for (String ppName : nonOrderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -324,13 +337,25 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
-		// TODO: 2023/10/16 为什么要放到最后
+		/**
+		 * 这里将内部特殊bean后置处理器置后！主要是MergedBeanDefinitionPostProcessor类型的内部后置处理器一般是用于处理内部注解相关，
+		 * 并且在bean初始化前后可能需要触发回调的逻辑，这部分逻辑可能会依赖当前bean的一些其他数据。
+		 * 比如，CommonAnnotationBeanPostProcessor实现了postProcessBeforeInitialization方法用于处理@PostConstruct注解。
+		 * 因此，对于这种情况，spring这里的处理策略是优先让其他bean后置处理器执行完，然后再执行内部的特殊用途(注解功能实现等)的后置处理器。
+		 * 可参考：https://zhuanlan.zhihu.com/p/367076177
+		 */
 		sortPostProcessors(internalPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
-//		ApplicationListenerDetector
+		/**
+		 * 注：重新将用于侦测应用事件监听器实例的Bean后置处理器重新注册，也是为了将该后置处理器放置到最后。
+		 * 我们注意到ApplicationListenerDetector实现了MergedBeanDefinitionPostProcessor接口，所以放置在最后处理的原因和上面类似。
+		 * 原因：ApplicationListenerDetector需要判断那些bean是监听器类型，通过spring的getBeanNamesForType判断是不行的，
+		 * 因为有可能bean会被其他后置处理器包装，因此需要通过bean定义后置处理器根据Bean的真实类型来判断。这里由于其他MergedBeanDefinitionPostProcessor
+		 * 后置处理器实例也可能会修改bean定义，所以ApplicationListenerDetector必须在所有后置处理器之后。
+		 */
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 

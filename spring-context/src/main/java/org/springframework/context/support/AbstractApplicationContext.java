@@ -651,18 +651,19 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
 				/* 2022/1/2: 4. Bean工厂初始化完成后，子类根据不同的应用场景对Bean工厂进一步设置。
-				* 注: 其实无非还是注册Aware处理器、特殊的Bean后置处理器以及提前注册一些特殊的Bean */
+				* 注: 4. 其实无非还是注册Aware处理器、特殊的Bean后置处理器以及提前注册一些特殊的Bean */
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
-				// 注：调用在当前应用上下文、内部bean工厂内注册的Bean工厂后置处理器功能
+				// 注：5. 调用在当前应用上下文、内部bean工厂内注册的Bean工厂后置处理器功能
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
-				// 注：注册用于拦截bean创建过程中的bean后置处理器
+				// 注：6. 注册用于拦截bean创建过程中的bean后置处理器
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
+				// 注：7. 初始化当前应用上下文的消息源bean
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
@@ -908,17 +909,23 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Initialize the MessageSource.
 	 * Use parent's if none defined in this context.
+	 * 注：初始化当前应用上下文的消息源bean实例
+	 * 如果当前消息没有在当前应用上下文中定义，就使用父级上下文的消息源进行解析。
 	 */
 	protected void initMessageSource() {
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		// 注：判断当前应用上下文的bean容器中是否包含消息源bean定义-messageSource
 		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
+			// 注：实例化messageSource的bean实力
 			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
 			// Make MessageSource aware of parent MessageSource.
+			// 如果当前应用上下文存在父级上下文，并且消息源是继承性消息源，下面就会
 			if (this.parent != null && this.messageSource instanceof HierarchicalMessageSource) {
 				HierarchicalMessageSource hms = (HierarchicalMessageSource) this.messageSource;
 				if (hms.getParentMessageSource() == null) {
 					// Only set parent context as parent MessageSource if no parent MessageSource
 					// registered already.
+					//
 					hms.setParentMessageSource(getInternalParentMessageSource());
 				}
 			}
