@@ -170,7 +170,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private SecurityContextProvider securityContextProvider;
 
-	/** Map from bean name to merged RootBeanDefinition. */
+	/** Map from bean name to merged RootBeanDefinition.
+	 * 注：已合并后的bean定义缓存
+	 * */
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<>(256);
 
 	/** Names of beans that have already been created at least once. */
@@ -1309,23 +1311,30 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return a merged RootBeanDefinition, traversing the parent bean definition
 	 * if the specified bean corresponds to a child bean definition.
+	 * 注：通过当前方法返回指定beanName对应的合并后的Bean定义。
+	 * 合并后的bean定义是指如果指定的bean具有父bean定义，则先遍历父bean定义，然后再用子bean定义覆盖之。
 	 * @param beanName the name of the bean to retrieve the merged definition for
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the given name
 	 * @throws BeanDefinitionStoreException in case of an invalid bean definition
+	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108336168
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
+		// 注：合并bean定义是需要再mergedBeanDefinitions缓存上加锁的，这里通过get操作快速判断当前bean是否已经合并了e
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null && !mbd.stale) {
+			// 注：如果合并后的bean定义存在且未过时(不需要重新合并)，就直接返回即可
 			return mbd;
 		}
+		// 注：先获取beanName对应的原始的bean定义，然后调用Merage方法
 		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));
 	}
 
 	/**
 	 * Return a RootBeanDefinition for the given top-level bean, by merging with
 	 * the parent if the given bean's definition is a child bean definition.
+	 * 注：如果给的一级bean定义是一个子bean定义，就执行合并操作并赶回合并后的bean定义
 	 * @param beanName the name of the bean definition
 	 * @param bd the original bean definition (Root/ChildBeanDefinition)
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
@@ -1340,10 +1349,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return a RootBeanDefinition for the given bean, by merging with the
 	 * parent if the given bean's definition is a child bean definition.
+	 * 注：如果给的bean定义是一个子bean定义，就执行合并操作并赶回合并后的bean定义
 	 * @param beanName the name of the bean definition
 	 * @param bd the original bean definition (Root/ChildBeanDefinition)
 	 * @param containingBd the containing bean definition in case of inner bean,
-	 * or {@code null} in case of a top-level bean
+	 * or {@code null} in case of a top-level bean 注：如果是内部bean，则为内部bean的定义；如果是一级bean，此参数为null
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
 	 * @throws BeanDefinitionStoreException in case of an invalid bean definition
 	 */
@@ -1950,12 +1960,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Return the bean definition for the given bean name.
 	 * Subclasses should normally implement caching, as this method is invoked
 	 * by this class every time bean definition metadata is needed.
+	 * 注：通过当前方法返回指定beanName对应的bean定义信息
+	 * 子类，即具体工厂实现类应该设计缓存的方式快速支持当前查询接口，因为每次需要bean定义元数据时就会调用该方法。
 	 * <p>Depending on the nature of the concrete bean factory implementation,
 	 * this operation might be expensive (for example, because of directory lookups
 	 * in external registries). However, for listable bean factories, this usually
 	 * just amounts to a local hash lookup: The operation is therefore part of the
 	 * public interface there. The same implementation can serve for both this
 	 * template method and the public interface method in that case.
+	 * 注：由于不同具体Bean工厂的实现有所不同，该方法可能实现逻辑十分复杂，比如需要考虑在外部注册器查找目录。
+	 * 然而，在普通可查询bean工厂中，这个方法的实现逻辑相当于本地hash查找操作。
+	 * 因此，这部分操作是公共获取bean定义方法的一部分。并且模版方法和公有接口方法可以使用一个实现逻辑。
+	 * 公有接口：ConfigurableListableBeanFactory#getBeanDefinition
 	 * @param beanName the name of the bean to find a definition for
 	 * @return the BeanDefinition for this prototype name (never {@code null})
 	 * @throws org.springframework.beans.factory.NoSuchBeanDefinitionException

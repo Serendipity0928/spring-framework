@@ -223,6 +223,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	/**
 	 * Determine whether an embedded value resolver has been registered with this
 	 * bean factory, to be applied through {@link #resolveEmbeddedValue(String)}.
+	 * 注：判断是否当前bean容器已经注册了用于解析注解值的嵌入值解析器实例
 	 * @since 4.3
 	 */
 	boolean hasEmbeddedValueResolver();

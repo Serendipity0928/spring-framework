@@ -843,8 +843,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Override
 	public BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException {
+		// 注：内部根据beanName通过bean定义缓存快速查找
 		BeanDefinition bd = this.beanDefinitionMap.get(beanName);
-		if (bd == null) {
+		if (bd == null) {	// 注：不存在bean定义的情况下抛出异常
 			if (logger.isTraceEnabled()) {
 				logger.trace("No bean named '" + beanName + "' found in " + this);
 			}
@@ -876,7 +877,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Override
 	public void freezeConfiguration() {
+		// 注：设置bean工厂冻结状态
 		this.configurationFrozen = true;
+		// 注：已被冻结bean定义的beanName缓存
 		this.frozenBeanDefinitionNames = StringUtils.toStringArray(this.beanDefinitionNames);
 	}
 
@@ -895,6 +898,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return (this.configurationFrozen || super.isBeanEligibleForMetadataCaching(beanName));
 	}
 
+	// 注：容器初始化完后，初始化容器中所有非拦截在的单例bean实例。
+	// 参考：https://blog.csdn.net/dhaiuda/article/details/83621970
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
 		if (logger.isTraceEnabled()) {
@@ -903,10 +908,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		/**
+		 * DefaultListableBeanFactory allows for init methods to register further bean definitions (again; SPR-7757)
+		 * 通过重新赋值一份bean定义list，bean容器允许支持多个初始化方法去注册bean定义。
+		 * 常规来说，spring的启动过程实际上是单线程的，这么做的目的为了之后并行初始化bean容器做考虑。
+		 */
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// 注：触发所有非懒加载的bean的初始化过程
 		for (String beanName : beanNames) {
+			// 注：获取合并bean定义
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				if (isFactoryBean(beanName)) {
@@ -935,6 +947,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// 注：触发SmartInitializingSingleton类型单例bean的回调方法。
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {

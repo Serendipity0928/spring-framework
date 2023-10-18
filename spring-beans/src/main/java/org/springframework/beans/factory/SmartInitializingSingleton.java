@@ -40,6 +40,7 @@ package org.springframework.beans.factory;
  * @author Juergen Hoeller
  * @since 4.1
  * @see org.springframework.beans.factory.config.ConfigurableListableBeanFactory#preInstantiateSingletons()
+ * 注：参考文档-https://zhuanlan.zhihu.com/p/545947394
  */
 public interface SmartInitializingSingleton {
 

@@ -21,6 +21,7 @@ import org.springframework.lang.Nullable;
 /**
  * Interface to be implemented by bean metadata elements
  * that carry a configuration source object.
+ * 注：表示为一个Bean配置单元的接口。接口提供了获取配置源对象的方法。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -29,6 +30,7 @@ public interface BeanMetadataElement {
 
 	/**
 	 * Return the configuration source {@code Object} for this metadata element
+	 * 注：返回当前这Bean元信息的配置源对象，默认不提供，即null
 	 * (may be {@code null}).
 	 */
 	@Nullable

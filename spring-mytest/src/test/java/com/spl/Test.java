@@ -1,5 +1,6 @@
 package com.spl;
 
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -18,8 +19,8 @@ public class Test {
 		System.out.println(context.getParent());
 		System.out.println(context.getAutowireCapableBeanFactory());
 
-//		context.addBeanFactoryPostProcessor();
-
+		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+//		beanFactory.getBeanDefinition()
 
 		context.close();
 	}

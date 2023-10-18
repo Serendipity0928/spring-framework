@@ -1067,9 +1067,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Finish the initialization of this context's bean factory,
 	 * initializing all remaining singleton beans.
+	 * 注：完成上下文内部bean工厂(容器)的初始化工作；最后初始化所有剩余的单例bean
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
+		// 注：初始化用于类型转换的bean-conversionService
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(
@@ -1079,23 +1081,29 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Register a default embedded value resolver if no bean post-processor
 		// (such as a PropertyPlaceholderConfigurer bean) registered any before:
 		// at this point, primarily for resolution in annotation attribute values.
+		// 注：如果之前bean工厂后置处理器没有注册嵌入值解析器的话，这里就设置一个默认的解析器-主要用于解析注解值。
+		// 默认解析器是StringValueResolver类型，这是一个函数式接口，具体由环境对象来解析给定的值。
 		if (!beanFactory.hasEmbeddedValueResolver()) {
 			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
 		}
 
 		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		// 注：初始化容器中所有的LoadTimeWeaverAware类型的bean实力，完成织入功能
 		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
 		for (String weaverAwareName : weaverAwareNames) {
 			getBean(weaverAwareName);
 		}
 
 		// Stop using the temporary ClassLoader for type matching.
+		// 注：加载时织入已经完成，将其所需要的临时类加载器置空
 		beanFactory.setTempClassLoader(null);
 
 		// Allow for caching all bean definition metadata, not expecting further changes.
+		// 注：在初始化正常bean之前，设置bean工厂(容器)的冻结状态，所有bean定义不会被进一步修改
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		// 注：初始化bean工厂(容器)中所有剩余非懒加载的单例bean
 		beanFactory.preInstantiateSingletons();
 	}
 
