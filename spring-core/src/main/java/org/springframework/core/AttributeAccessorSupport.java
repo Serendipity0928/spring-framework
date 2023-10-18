@@ -27,8 +27,11 @@ import org.springframework.util.StringUtils;
 /**
  * Support class for {@link AttributeAccessor AttributeAccessors}, providing
  * a base implementation of all methods. To be extended by subclasses.
+ * 注：AttributeAccessor接口的支持抽象类，提供了属性池的基本实现。
+ * 子类可以继承该抽象类，而不必实现AttributeAccessor接口的各个方法了-support
  *
  * <p>{@link Serializable} if subclasses and all attribute values are {@link Serializable}.
+ * 注：抽象类还实现了Serializable接口，这样子类可以考虑支持属性值的序列化和反序列化。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -37,7 +40,9 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("serial")
 public abstract class AttributeAccessorSupport implements AttributeAccessor, Serializable {
 
-	/** Map with String keys and Object values. */
+	/** Map with String keys and Object values.
+	 * 注：用于存储属性的key和value值
+	 * */
 	private final Map<String, Object> attributes = new LinkedHashMap<>();
 
 
@@ -80,6 +85,7 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 
 	/**
 	 * Copy the attributes from the supplied AttributeAccessor to this accessor.
+	 * 注：将提供属性池中所有属性导入到当前属性池中
 	 * @param source the AttributeAccessor to copy from
 	 */
 	protected void copyAttributesFrom(AttributeAccessor source) {

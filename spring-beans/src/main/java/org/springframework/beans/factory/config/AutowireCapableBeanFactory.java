@@ -72,6 +72,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	/**
 	 * Constant that indicates no externally defined autowiring. Note that
 	 * BeanFactoryAware etc and annotation-driven injection will still be applied.
+	 * 注：这个自动注入模式常量，表示不会对当前bean进行外部类的注入。
+	 * 但是，BeanFactoryAware等以及注解驱动的注入仍然会执行，比如@Autowired、@Resource
 	 * @see #createBean
 	 * @see #autowire
 	 * @see #autowireBeanProperties
@@ -81,6 +83,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	/**
 	 * Constant that indicates autowiring bean properties by name
 	 * (applying to all bean property setters).
+	 * 注：这个自动注入模式常量，表示会按照bean的名称自动装配bean的属性
+	 * （将会应用到所有bean的set方法上）
 	 * @see #createBean
 	 * @see #autowire
 	 * @see #autowireBeanProperties
@@ -90,6 +94,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	/**
 	 * Constant that indicates autowiring bean properties by type
 	 * (applying to all bean property setters).
+	 * 注：这个自动注入模式常量，表示会按照bean的类型自动装配bean的属性
+	 * （将会应用到所有bean的set方法上）
 	 * @see #createBean
 	 * @see #autowire
 	 * @see #autowireBeanProperties
@@ -99,6 +105,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	/**
 	 * Constant that indicates autowiring the greediest constructor that
 	 * can be satisfied (involves resolving the appropriate constructor).
+	 * 注：这个自动注入模式常量，表示将自动装配最合适的构造器。（涉及到解析合适的构造器）
 	 * @see #createBean
 	 * @see #autowire
 	 */
@@ -107,6 +114,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	/**
 	 * Constant that indicates determining an appropriate autowire strategy
 	 * through introspection of the bean class.
+	 * 注：这个自动注入模式常量，表示会通过bean内部信息来决定合适的装配策略。[已弃用]
 	 * @see #createBean
 	 * @see #autowire
 	 * @deprecated as of Spring 3.0: If you are using mixed autowiring strategies,

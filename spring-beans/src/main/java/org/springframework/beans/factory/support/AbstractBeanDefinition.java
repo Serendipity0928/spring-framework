@@ -42,10 +42,13 @@ import org.springframework.util.StringUtils;
  * Base class for concrete, full-fledged {@link BeanDefinition} classes,
  * factoring out common properties of {@link GenericBeanDefinition},
  * {@link RootBeanDefinition}, and {@link ChildBeanDefinition}.
+ * 注：AbstractBeanDefinition是一个具体得、完整的Bean定义的抽象基类，
+ * 并将其三个具体子类的共有属性分解并定义在该抽象基类中。
  *
  * <p>The autowire constants match the ones defined in the
  * {@link org.springframework.beans.factory.config.AutowireCapableBeanFactory}
  * interface.
+ * bean定义中涉及到自动装配的属性，其涉及到的常量定义在AutowireCapableBeanFactory接口中。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -54,19 +57,27 @@ import org.springframework.util.StringUtils;
  * @see GenericBeanDefinition
  * @see RootBeanDefinition
  * @see ChildBeanDefinition
+ * 注：参考：https://mp.weixin.qq.com/s/ufa8BYlnWxaMXst1rypuNA
  */
 @SuppressWarnings("serial")
 public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor
 		implements BeanDefinition, Cloneable {
+	/**
+	 * 注：抽象基类继承了BeanMetadataAttributeAccessor类，具备bean元数据属性访问以及获取配置源的能力。
+	 * BeanDefinition接口实际上实现的接口(AttributeAccessor, BeanMetadataElement)均已经被BeanMetadataAttributeAccessor实现了，
+	 * 因此，bean定义抽象基类中只需要实现BeanDefinition接口本身定义的相关方法即可。
+	 */
 
 	/**
 	 * Constant for the default scope name: {@code ""}, equivalent to singleton
 	 * status unless overridden from a parent bean definition (if applicable).
+	 * 注：bean的默认作用范围。如果不存在父bean定义，默认空等价于单例；否则，跟随父bean定义。
 	 */
 	public static final String SCOPE_DEFAULT = "";
 
 	/**
 	 * Constant that indicates no external autowiring at all.
+	 * 注：自动注入模式-不会记进行外部的bean注入
 	 * @see #setAutowireMode
 	 */
 	public static final int AUTOWIRE_NO = AutowireCapableBeanFactory.AUTOWIRE_NO;
