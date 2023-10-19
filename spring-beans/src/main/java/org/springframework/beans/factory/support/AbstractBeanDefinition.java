@@ -218,7 +218,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private MutablePropertyValues propertyValues;
 
-	// 注：用于记录哪些方法被复写了
+	/**
+	 * 注：用于记录哪些方法被复写了
+	 * lookup-method、replaced-method标签指定要覆盖的方法名会设置到该缓存汇总
+	 */
 	private MethodOverrides methodOverrides = new MethodOverrides();
 
 	// 初始化bean方法，即init-method指定的方法
@@ -1144,6 +1147,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Set whether this bean definition is 'synthetic', that is, not defined
 	 * by the application itself (for example, an infrastructure bean such
 	 * as a helper for auto-proxying, created through {@code <aop:config>}).
+	 * 注：设置当前bean定义是否为动态生成的，即非应用本身定义
 	 */
 	public void setSynthetic(boolean synthetic) {
 		this.synthetic = synthetic;
@@ -1152,6 +1156,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Return whether this bean definition is 'synthetic', that is,
 	 * not defined by the application itself.
+	 * 注：返回当前是否为动态生成的bean定义
 	 */
 	public boolean isSynthetic() {
 		return this.synthetic;
@@ -1159,6 +1164,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Set the role hint for this {@code BeanDefinition}.
+	 * 注：设置当前bean定义的角色标识
 	 */
 	@Override
 	public void setRole(int role) {
@@ -1167,6 +1173,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return the role hint for this {@code BeanDefinition}.
+	 * 注：返回当前bean定义的角色标识
 	 */
 	@Override
 	public int getRole() {
@@ -1175,6 +1182,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Set a human-readable description of this bean definition.
+	 * 注：设置当前bean定义的描述信息
 	 */
 	@Override
 	public void setDescription(@Nullable String description) {
@@ -1183,6 +1191,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return a human-readable description of this bean definition.
+	 * 注：返回当前bean定义的描述信息
 	 */
 	@Override
 	@Nullable
@@ -1193,6 +1202,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Set the resource that this bean definition came from
 	 * (for the purpose of showing context in case of errors).
+	 * 注：设置当前bean定义的源文件(用于上下文异常情况日志)
 	 */
 	public void setResource(@Nullable Resource resource) {
 		this.resource = resource;
@@ -1200,6 +1210,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return the resource that this bean definition came from.
+	 * 注：返回当前bean定义的源文件
 	 */
 	@Nullable
 	public Resource getResource() {
@@ -1209,6 +1220,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Set a description of the resource that this bean definition
 	 * came from (for the purpose of showing context in case of errors).
+	 * 注：设置当前bean定义的源文件描述(用于上下文异常情况日志)
 	 */
 	public void setResourceDescription(@Nullable String resourceDescription) {
 		this.resource = (resourceDescription != null ? new DescriptiveResource(resourceDescription) : null);
@@ -1217,6 +1229,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Return a description of the resource that this bean definition
 	 * came from (for the purpose of showing context in case of errors).
+	 * 注：返回当前bean定义的源文件描述(用于上下文异常情况日志)
 	 */
 	@Override
 	@Nullable
@@ -1226,6 +1239,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Set the originating (e.g. decorated) BeanDefinition, if any.
+	 * 注：设置原始的、被装饰的bean定义
 	 */
 	public void setOriginatingBeanDefinition(BeanDefinition originatingBd) {
 		this.resource = new BeanDefinitionResource(originatingBd);
@@ -1234,8 +1248,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Return the originating BeanDefinition, or {@code null} if none.
 	 * Allows for retrieving the decorated bean definition, if any.
+	 * 注：返回原始的bean定义。这允许召回被被装饰的bean定义
 	 * <p>Note that this method returns the immediate originator. Iterate through the
 	 * originator chain to find the original BeanDefinition as defined by the user.
+	 * 注：注意这个方法仅返回直接的原始bean定义。如果有必要的话，可能需要多次调用原始bean定义链条来获得用户定义的bean定义。
 	 */
 	@Override
 	@Nullable
@@ -1246,14 +1262,20 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Validate this bean definition.
+	 * 抽象类提供了bean定义的验证过程【registerBeanDefinition的最后一步】
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void validate() throws BeanDefinitionValidationException {
+		/**
+		 * 1. “重写方法”不能和“工厂方法”同时存在
+		 * 因为工厂方法会返回一个具体的bean实例，不由spring来创建，因此重写方法没有任何意义。
+		 */
 		if (hasMethodOverrides() && getFactoryMethodName() != null) {
 			throw new BeanDefinitionValidationException(
 					"Cannot combine factory method with container-generated method overrides: " +
 					"the factory method must create the concrete bean instance.");
 		}
+		// 2. 校验当前bean类型中的"重写方法"，可能有不存在的情况
 		if (hasBeanClass()) {
 			prepareMethodOverrides();
 		}
@@ -1262,10 +1284,12 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Validate and prepare the method overrides defined for this bean.
 	 * Checks for existence of a method with the specified name.
+	 * 注：校验并准备当前bean中重写的方法，其中校验是指检查指定方法名的存在性。
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
 		// Check that lookup methods exist and determine their overloaded status.
+		// 检查当前bean重写方法的存在性，并且设置方法重载标识
 		if (hasMethodOverrides()) {
 			getMethodOverrides().getOverrides().forEach(this::prepareMethodOverride);
 		}
@@ -1275,6 +1299,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Validate and prepare the given method override.
 	 * Checks for existence of a method with the specified name,
 	 * marking it as not overloaded if none found.
+	 * 注：验证并且准备指定的重写方法实例
+	 * 校验指定重写方法名的存在性，如果存在的话就标注下不允许重载
 	 * @param mo the MethodOverride object to validate
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
@@ -1287,6 +1313,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			/**
+			 * 注：表示重写的方法不会被重载(因为数量就1个)。这么做的目的增加参数类型匹配检查的性能
+			 * 实际上，方法的个数也可能不只有1个或0个。这个方法主要目的是校验方法是否存在，顺便设置个标识提高性能。
+			 */
 			mo.setOverloaded(false);
 		}
 	}
@@ -1295,6 +1325,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Public declaration of Object's {@code clone()} method.
 	 * Delegates to {@link #cloneBeanDefinition()}.
+	 * 抽象bean定义支持拷贝。
+	 * 但具体如何拷贝bean定义由子类实现cloneBeanDefinition方法。
 	 * @see Object#clone()
 	 */
 	@Override
@@ -1305,6 +1337,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Clone this bean definition.
 	 * To be implemented by concrete subclasses.
+	 * 子类实现bean定义的拷贝方式
 	 * @return the cloned bean definition object
 	 */
 	public abstract AbstractBeanDefinition cloneBeanDefinition();
