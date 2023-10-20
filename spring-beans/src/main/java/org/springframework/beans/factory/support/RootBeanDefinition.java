@@ -61,9 +61,13 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {
 
+	/**
+	 * 注：包装bean定义，包括beanName以及其别名
+	 */
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
+	// 注：JDK原生注解类用于保存bean的注解信息
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
@@ -72,57 +76,86 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * */
 	volatile boolean stale;
 
+	// 注：标识是否允许缓存
 	boolean allowCaching = true;
 
+	// 注：标识bean的工厂方法是否单一
 	boolean isFactoryMethodUnique;
 
+	// 注：解析后的目标类型
 	@Nullable
 	volatile ResolvableType targetType;
 
-	/** Package-visible field for caching the determined Class of a given bean definition. */
+	/** Package-visible field for caching the determined Class of a given bean definition.
+	 * 注：用于缓存bean定义确定的类型Class，权限为包可见(下同)
+	 * */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
 
-	/** Package-visible field for caching if the bean is a factory bean. */
+	/** Package-visible field for caching if the bean is a factory bean.
+	 * 注：是否当前bean为FactoryBean
+	 * */
 	@Nullable
 	volatile Boolean isFactoryBean;
 
-	/** Package-visible field for caching the return type of a generically typed factory method. */
+	/** Package-visible field for caching the return type of a generically typed factory method.
+	 * 注：当前bean的工厂方法返回的类型
+	 * */
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
-	/** Package-visible field for caching a unique factory method candidate for introspection. */
+	/** Package-visible field for caching a unique factory method candidate for introspection.
+	 * 注：用于缓存用于自查工厂方法的候选者
+	 * */
 	@Nullable
 	volatile Method factoryMethodToIntrospect;
 
-	/** Common lock for the four constructor fields below. */
+	/** Common lock for the four constructor fields below.
+	 * 注：下面四个构造器属性的共同锁
+	 * */
 	final Object constructorArgumentLock = new Object();
 
-	/** Package-visible field for caching the resolved constructor or factory method. */
+	/** Package-visible field for caching the resolved constructor or factory method.
+	 * 注：缓存已解析的构造器或工厂方法
+	 * Executable是JDK中Method、Constructor类型的父类
+	 * */
 	@Nullable
 	Executable resolvedConstructorOrFactoryMethod;
 
-	/** Package-visible field that marks the constructor arguments as resolved. */
+	/** Package-visible field that marks the constructor arguments as resolved.
+	 * 注：标识构造器参数是否解析完毕
+	 * */
 	boolean constructorArgumentsResolved = false;
 
-	/** Package-visible field for caching fully resolved constructor arguments. */
+	/** Package-visible field for caching fully resolved constructor arguments.
+	 * 注：缓存所有已解析的构造器参数
+	 * */
 	@Nullable
 	Object[] resolvedConstructorArguments;
 
-	/** Package-visible field for caching partly prepared constructor arguments. */
+	/** Package-visible field for caching partly prepared constructor arguments.
+	 * 注：缓存部分已准备好的构造器参数
+	 * */
 	@Nullable
 	Object[] preparedConstructorArguments;
 
-	/** Common lock for the two post-processing fields below. */
+	/** Common lock for the two post-processing fields below.
+	 * 注：用于下面两个后置处理器标识的同步锁
+	 * */
 	final Object postProcessingLock = new Object();
 
-	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied. */
+	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied.
+	 * 注：用于表示合并bean定义后置处理器是否已经处理
+	 * */
 	boolean postProcessed = false;
 
-	/** Package-visible field that indicates a before-instantiation post-processor having kicked in. */
+	/** Package-visible field that indicates a before-instantiation post-processor having kicked in.
+	 * 注：用于表示在实例化之前的后置处理器是否已经处理
+	 * */
 	@Nullable
 	volatile Boolean beforeInstantiationResolved;
 
+	// 注：缓存一些
 	@Nullable
 	private Set<Member> externallyManagedConfigMembers;
 
