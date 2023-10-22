@@ -44,10 +44,14 @@ import org.springframework.util.ObjectUtils;
  * Helper class that encapsulates the specification of a method parameter, i.e. a {@link Method}
  * or {@link Constructor} plus a parameter index and a nested type index for a declared generic
  * type. Useful as a specification object to pass along.
+ * 注：用于封装方法参数说明的帮助类，其中包括方法或构造器，外加一个参数索引和嵌套的通用类型。
+ * MethodParameter这个类可单独作为一个规范对象进行传递。
  *
  * <p>As of 4.2, there is a {@link org.springframework.core.annotation.SynthesizingMethodParameter}
  * subclass available which synthesizes annotations with attribute aliases. That subclass is used
  * for web and message endpoint processing, in particular.
+ * 注：从spring4.2开始，提供了一个方法参数子类-SynthesizingMethodParameter。该类将属性别名复制到注解上。
+ * 这个子类尤其在web和消息终端处理上非常适用。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -57,44 +61,68 @@ import org.springframework.util.ObjectUtils;
  * @author Phillip Webb
  * @since 2.0
  * @see org.springframework.core.annotation.SynthesizingMethodParameter
+ * 参考：https://blog.csdn.net/qq_30321211/article/details/108357802
  */
 public class MethodParameter {
 
+	// 注：空注解数组
 	private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
 
-
+	/**
+	 * 注：当前的方法Method或构造器对象。
+	 * 创建MethodParameter实例时会初始化该字段。Executable是Method、Constructor的父抽象类。
+	 */
 	private final Executable executable;
 
+	/**
+	 * 注：当前方法参数在当前方法的索引
+	 * 创建MethodParameter实例时会初始化该字段。初始化时会校验该index值与方法总参数的关系。
+	 */
 	private final int parameterIndex;
 
+	/**
+	 * 注：当前方法、当前索引指向的参数
+	 */
 	@Nullable
 	private volatile Parameter parameter;
 
+	/**
+	 * 注：方法参数类型的嵌套等级
+	 * 默认为1；对于参数类型为列表的列表，那么1表示嵌套列表，而2表示嵌套列表的元素。
+	 */
 	private int nestingLevel;
 
 	/** Map from Integer level to Integer type index. */
 	@Nullable
 	Map<Integer, Integer> typeIndexesPerLevel;
 
-	/** The containing class. Could also be supplied by overriding {@link #getContainingClass()} */
+	/** The containing class. Could also be supplied by overriding {@link #getContainingClass()}
+	 * 注：包含的类型
+	 * */
 	@Nullable
 	private volatile Class<?> containingClass;
 
+	// 注：当前参数类型
 	@Nullable
 	private volatile Class<?> parameterType;
 
+	// 注：当前泛型参数类型
 	@Nullable
 	private volatile Type genericParameterType;
 
+	// 注：当前参数的注解
 	@Nullable
 	private volatile Annotation[] parameterAnnotations;
 
+	// 注：用于发现方法或构造函数的参数名的发现器
 	@Nullable
 	private volatile ParameterNameDiscoverer parameterNameDiscoverer;
 
+	// 注：当前参数名
 	@Nullable
 	private volatile String parameterName;
 
+	// 注：内嵌的方法参数
 	@Nullable
 	private volatile MethodParameter nestedMethodParameter;
 
@@ -191,6 +219,7 @@ public class MethodParameter {
 	/**
 	 * Return the wrapped Method, if any.
 	 * <p>Note: Either Method or Constructor is available.
+	 * 注：返回包装的方法
 	 * @return the Method, or {@code null} if none
 	 */
 	@Nullable
@@ -210,6 +239,7 @@ public class MethodParameter {
 
 	/**
 	 * Return the class that declares the underlying Method or Constructor.
+	 * 注：返回声明该方法或构造器的类型对象-Class
 	 */
 	public Class<?> getDeclaringClass() {
 		return this.executable.getDeclaringClass();
@@ -260,6 +290,7 @@ public class MethodParameter {
 
 	/**
 	 * Return the index of the method/constructor parameter.
+	 * 注：返回方法/构造器参数的索引（-1为返回类型）
 	 * @return the parameter index (-1 in case of the return type)
 	 */
 	public int getParameterIndex() {

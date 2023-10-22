@@ -127,6 +127,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	/**
 	 * Return whether to cache bean metadata such as given bean definitions
 	 * (in merged fashion) and resolved bean classes.
+	 * 注：
 	 */
 	boolean isCacheBeanMetadata();
 
@@ -333,6 +334,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 
 	/**
 	 * Determine whether the bean with the given name is a FactoryBean.
+	 * 注：检查指定的bean名对应的bean实例是否为FactoryBean
 	 * @param name the name of the bean to check
 	 * @return whether the bean is a FactoryBean
 	 * ({@code false} means the bean exists but is not a FactoryBean)

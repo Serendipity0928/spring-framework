@@ -54,6 +54,8 @@ public abstract class BeanFactoryUtils {
 
 	/**
 	 * Cache from name with factory bean prefix to stripped name without dereference.
+	 * 注：全局缓存bean名称缓存。将FactoryBean带有前缀的名称转换为具有同样引用的不带前缀的映射。
+	 * - FactoryBean的名称可以加上一个或多个&前缀。
 	 * @since 5.1
 	 * @see BeanFactory#FACTORY_BEAN_PREFIX
 	 */
@@ -74,13 +76,14 @@ public abstract class BeanFactoryUtils {
 	/**
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
+	 * 注：返回实际的bean名称，其中会将factoryBean同样引用的前缀去除。
 	 * @param name the name of the bean
 	 * @return the transformed name
 	 * @see BeanFactory#FACTORY_BEAN_PREFIX
 	 */
 	public static String transformedBeanName(String name) {
 		Assert.notNull(name, "'name' must not be null");
-		if (!name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
+		if (!name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {	// 注：不以&为开头的正常bean前缀
 			return name;
 		}
 		return transformedBeanNameCache.computeIfAbsent(name, beanName -> {

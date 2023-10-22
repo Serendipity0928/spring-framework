@@ -80,6 +80,7 @@ import org.springframework.util.StringUtils;
  * @see #forInstance(Object)
  * @see ResolvableTypeProvider
  */
+// TODO: 2023/10/23 https://blog.csdn.net/zzuhkp/article/details/107749148
 @SuppressWarnings("serial")
 public class ResolvableType implements Serializable {
 

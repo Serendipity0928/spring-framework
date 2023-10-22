@@ -25,11 +25,16 @@ import org.springframework.util.ObjectUtils;
  * Like any bean definition, it allows for specifying a class plus optionally
  * constructor argument values and property values. Additionally, deriving from a
  * parent bean definition can be flexibly configured through the "parentName" property.
+ * 注：GenericBeanDefinition是一个一站式的标准bean定义。
+ * 如同其他bean定义类一样，其允许指定一个类以及额外的构造器参数和属性值。
+ * 另外，通过parentName属性的配置可以灵活的配置父bean定义。
  *
  * <p>In general, use this {@code GenericBeanDefinition} class for the purpose of
  * registering user-visible bean definitions (which a post-processor might operate on,
  * potentially even reconfiguring the parent name). Use {@code RootBeanDefinition} /
  * {@code ChildBeanDefinition} where parent/child relationships happen to be pre-determined.
+ * 注：通常情况下，如果需要对注册bean定义对用户可见，使用GenericBeanDefinition类型（后置处理器可能对bean定义进行操作，甚至重置父bean名）。
+ * 在父子关系恰好预先确定的情况下，使用RootBeanDefinition/ChildBeanDefinition。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -40,6 +45,7 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class GenericBeanDefinition extends AbstractBeanDefinition {
 
+	// 注：父bean定义名
 	@Nullable
 	private String parentName;
 
@@ -47,6 +53,7 @@ public class GenericBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new GenericBeanDefinition, to be configured through its bean
 	 * properties and configuration methods.
+	 * 注：使用空参构造创建一个GenericBeanDefinition实例
 	 * @see #setBeanClass
 	 * @see #setScope
 	 * @see #setConstructorArgumentValues
@@ -59,18 +66,20 @@ public class GenericBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new GenericBeanDefinition as deep copy of the given
 	 * bean definition.
+	 * 注：通过一个BeanDefinition来创造一个GenericBeanDefinition实例
 	 * @param original the original bean definition to copy from
 	 */
 	public GenericBeanDefinition(BeanDefinition original) {
 		super(original);
 	}
 
-
+	// 注：设置当前bean定义的父定义名。
 	@Override
 	public void setParentName(@Nullable String parentName) {
 		this.parentName = parentName;
 	}
 
+	// 注：返回当前bean定义的父定义
 	@Override
 	@Nullable
 	public String getParentName() {

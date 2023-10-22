@@ -160,7 +160,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	/** Map from dependency type to corresponding autowired value. */
 	private final Map<Class<?>, Object> resolvableDependencies = new ConcurrentHashMap<>(16);
 
-	/** Map of bean definition objects, keyed by bean name. */
+	/** Map of bean definition objects, keyed by bean name.
+	 * 注：注入到容器中的原始bean定义(尚未合并过的)
+	 * */
 	private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
 
 	/** Map from bean name to merged BeanDefinitionHolder. */
@@ -916,11 +918,15 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
-		// 注：触发所有非懒加载的bean的初始化过程
+		// 注：触发所有非懒加载的单例bean的初始化过程
 		for (String beanName : beanNames) {
-			// 注：获取合并bean定义
+			/**
+			 * 注：获取合并bean定义。注意，这里调用的是Local，即在当前上下文中获取。
+			 * 因为beanName是在本上下文中缓存，因此这里从当前上下文获取是合理的。但当前bean可能是可以继承父上下文的bean定义的吧(猜测)。
+			 */
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// 注：根据合并后的bean定义，过滤非抽象、非单例、非懒加载的bean进行初始化
 				if (isFactoryBean(beanName)) {
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {

@@ -71,7 +71,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Constant for the default scope name: {@code ""}, equivalent to singleton
 	 * status unless overridden from a parent bean definition (if applicable).
-	 * 注：bean的默认作用范围。如果不存在父bean定义，默认空等价于单例；否则，跟随父bean定义。
+	 * 注：bean的默认作用范围。如果不存在父bean定义，默认空等价于单例(会在合并bean定义之后检查)；否则，跟随父bean定义。
 	 */
 	public static final String SCOPE_DEFAULT = "";
 
@@ -206,7 +206,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private String factoryBeanName;
 
-	// 注：工厂方法的名称
+	/**
+	 * 注：工厂方法的名称
+	 * 疑问：这个是什么？感觉普通类注册的时候就有？
+	 */
 	@Nullable
 	private String factoryMethodName;
 
@@ -340,7 +343,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Override settings in this bean definition (presumably a copied parent
 	 * from a parent-child inheritance relationship) from the given bean
 	 * definition (presumably the child).
-	 * 注：根据指定的bean定义(可能是子bean定义)来覆盖当前的bean定义(可能是父定义)设置
+	 * 注：根据指定的bean定义(可能是子bean定义)来覆盖当前的bean定义(可能是拷贝父定义而来)设置
 	 * <ul>
 	 * <li>Will override beanClass if specified in the given bean definition.
 	 * <li>Will always take {@code abstract}, {@code scope},
@@ -352,6 +355,17 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * {@code initMethodName}, and {@code destroyMethodName} if specified
 	 * in the given bean definition.
 	 * </ul>
+	 * 注：
+	 *   1. 可继承属性
+	 *   	如果子bean定义存在{某属性}，就重写；否则继承自父bean定义。
+	 *   	bean类型名、作用域、factoryBean名称、factory方法名、bean类型、懒加载、初始化方法、销毁方法；
+	 *   2. 合并属性【非重写；合并属性也应算可继承属性的一部分，所以在下面列举，这里说明下】
+	 * 	 	部分属性可能是个集合，可以将父bean定义和子bean定义数据合并起来
+	 * 	 	属性池、构造器参数值、属性值、重写的方法、qualifiers属性、
+	 *   3. 非继承属性
+	 *   	不论子bean定义是否存在该属性，完全覆盖父bean定义；--即子bean定义不能依靠从父bean定义继承而来
+	 *   	抽象表示、bean角色、配置源对象、自动装配模式、依赖检查模式、bean的依赖、自动装配候选标识、主候选标识、实例化回调、
+	 *   	非公共权限访问标识、宽松模式标识、动态生成标识、定义源文件、源文件描述
 	 *
 	 */
 	public void overrideFrom(BeanDefinition other) {
@@ -370,20 +384,20 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		setRole(other.getRole());
 		setSource(other.getSource());
-		copyAttributesFrom(other);
+		copyAttributesFrom(other);		// 注：这里是合并
 
 		if (other instanceof AbstractBeanDefinition) {
 			AbstractBeanDefinition otherAbd = (AbstractBeanDefinition) other;
 			if (otherAbd.hasBeanClass()) {
 				setBeanClass(otherAbd.getBeanClass());
 			}
-			if (otherAbd.hasConstructorArgumentValues()) {
+			if (otherAbd.hasConstructorArgumentValues()) {	// 注：这里是合并
 				getConstructorArgumentValues().addArgumentValues(other.getConstructorArgumentValues());
 			}
-			if (otherAbd.hasPropertyValues()) {
+			if (otherAbd.hasPropertyValues()) {				// 注：这里是合并
 				getPropertyValues().addPropertyValues(other.getPropertyValues());
 			}
-			if (otherAbd.hasMethodOverrides()) {
+			if (otherAbd.hasMethodOverrides()) {			// 注：这里是合并
 				getMethodOverrides().addOverrides(otherAbd.getMethodOverrides());
 			}
 			Boolean lazyInit = otherAbd.getLazyInit();
@@ -1262,12 +1276,12 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Validate this bean definition.
-	 * 抽象类提供了bean定义的验证过程【registerBeanDefinition的最后一步】
+	 * 注：抽象类提供了bean定义的验证过程【registerBeanDefinition的最后一步】
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void validate() throws BeanDefinitionValidationException {
 		/**
-		 * 1. “重写方法”不能和“工厂方法”同时存在
+		 * 注：1. “重写方法”不能和“工厂方法”同时存在
 		 * 因为工厂方法会返回一个具体的bean实例，不由spring来创建，因此重写方法没有任何意义。
 		 */
 		if (hasMethodOverrides() && getFactoryMethodName() != null) {
@@ -1275,7 +1289,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 					"Cannot combine factory method with container-generated method overrides: " +
 					"the factory method must create the concrete bean instance.");
 		}
-		// 2. 校验当前bean类型中的"重写方法"，可能有不存在的情况
+		// 注：2. 校验当前bean类型中的"重写方法"，可能有不存在的情况
 		if (hasBeanClass()) {
 			prepareMethodOverrides();
 		}

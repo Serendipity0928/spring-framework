@@ -130,7 +130,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private ClassLoader tempClassLoader;
 
-	/** Whether to cache bean metadata or rather reobtain it for every access. */
+	/** Whether to cache bean metadata or rather reobtain it for every access.
+	 * 注：是否缓存bean的元数据，否则会在每次访问时重新获取元数据
+	 * */
 	private boolean cacheBeanMetadata = true;
 
 	/** Resolution strategy for expressions in bean definition values. */
@@ -171,7 +173,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private SecurityContextProvider securityContextProvider;
 
 	/** Map from bean name to merged RootBeanDefinition.
-	 * 注：已合并后的bean定义缓存
+	 * 注：已合并后的bean定义缓存；
+	 * 仅缓存的是不具有内部bean的合并bean定义；并且cacheBeanMetadata为true
 	 * */
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<>(256);
 
@@ -1094,6 +1097,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * merging a child bean definition with its parent if necessary.
 	 * <p>This {@code getMergedBeanDefinition} considers bean definition
 	 * in ancestors as well.
+	 * 注：根据指定bean名称返回合并后的bean定义，并且这是一个公开方法。
+	 * 如果当前上下文不包括指定的名称bean，就会尝试去父上下文中寻找
 	 * @param name the name of the bean to retrieve the merged definition for
 	 * (may be an alias)
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
@@ -1102,7 +1107,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@Override
 	public BeanDefinition getMergedBeanDefinition(String name) throws BeansException {
-		String beanName = transformedBeanName(name);
+		String beanName = transformedBeanName(name); // 这里会做去除前缀、别名的处理
 		// Efficiently check whether bean definition exists in this factory.
 		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
 			return ((ConfigurableBeanFactory) getParentBeanFactory()).getMergedBeanDefinition(beanName);
@@ -1111,12 +1116,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return getMergedLocalBeanDefinition(beanName);
 	}
 
+	// 注：检查指定的bean名对应的bean实例是否为FactoryBean
 	@Override
 	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
-		String beanName = transformedBeanName(name);
+		String beanName = transformedBeanName(name);	// 注：转换bean名称(去除&前缀、处理别名)
+		/**
+		 * 注：尝试获取单例bean实例，通过bean示例来判断是否为FactoryBean。
+		 * 	这里入参不允许早期引用，这就意味着getSingleton实际上就是通过一级缓存查找该bean是否已实例化
+		 */
 		Object beanInstance = getSingleton(beanName, false);
 		if (beanInstance != null) {
-			return (beanInstance instanceof FactoryBean);
+			return (beanInstance instanceof FactoryBean);	// 注：直接通过实例判断factoryBean类型
 		}
 		// No singleton instance found -> check bean definition.
 		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
@@ -1230,6 +1240,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return the bean name, stripping out the factory dereference prefix if necessary,
 	 * and resolving aliases to canonical names.
+	 * 注：返回bean的名称。内部去除掉了factoryBean的前缀、处理别名
 	 * @param name the user-specified name
 	 * @return the transformed bean name
 	 */
@@ -1311,23 +1322,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return a merged RootBeanDefinition, traversing the parent bean definition
 	 * if the specified bean corresponds to a child bean definition.
-	 * 注：通过当前方法返回指定beanName对应的合并后的Bean定义。
+	 * 注：通过当前方法在当前上下文中返回指定beanName对应的合并后的Bean定义。
 	 * 合并后的bean定义是指如果指定的bean具有父bean定义，则先遍历父bean定义，然后再用子bean定义覆盖之。
 	 * @param beanName the name of the bean to retrieve the merged definition for
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the given name
 	 * @throws BeanDefinitionStoreException in case of an invalid bean definition
 	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108336168
+	 * 区别当前抽象工厂提供的【公开】的获取合并bean定义的方法。
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
-		// 注：合并bean定义是需要再mergedBeanDefinitions缓存上加锁的，这里通过get操作快速判断当前bean是否已经合并了e
+		// 注：合并bean定义是需要再mergedBeanDefinitions缓存上加锁的，这里通过get操作快速判断当前bean是否已经合并了
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null && !mbd.stale) {
 			// 注：如果合并后的bean定义存在且未过时(不需要重新合并)，就直接返回即可
 			return mbd;
 		}
-		// 注：先获取beanName对应的原始的bean定义，然后调用Merage方法
+		// 注：先获取beanName对应的原始的bean定义，然后调用merge方法。【这里仅只有一级bean?】
 		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));
 	}
 
@@ -1361,36 +1373,53 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String beanName, BeanDefinition bd, @Nullable BeanDefinition containingBd)
 			throws BeanDefinitionStoreException {
 
+		// 注：合并bean定义的动作需要加同步锁
 		synchronized (this.mergedBeanDefinitions) {
-			RootBeanDefinition mbd = null;
-			RootBeanDefinition previous = null;
+			RootBeanDefinition mbd = null;		// 注：最终要返回的合并bean定义
+			RootBeanDefinition previous = null;	// 注：缓存已经合并，但需要重新合并的bean定义
 
 			// Check with full lock now in order to enforce the same merged instance.
+			/**
+			 * 注：进入同步区再次检查合并bean定义缓存中是否存在已经合并的实例，为了防止获得锁之前并发线程已经合并bean定义了。
+			 * 疑问：为什么这里containingBd不为Null的时候不需要检查呢？
+			 */
 			if (containingBd == null) {
 				mbd = this.mergedBeanDefinitions.get(beanName);
 			}
 
 			if (mbd == null || mbd.stale) {
-				previous = mbd;
-				if (bd.getParentName() == null) {
+				// 注：下面是合并bean不存在或需要重新合并的情况
+				previous = mbd;		// 注: 记录之前的合并bean定义
+				if (bd.getParentName() == null) {	// 注：如果当前bean定义不存在父bean定义，这也就意味着不需要合并。
 					// Use copy of given root bean definition.
+					/**
+					 * 注：即使不需要合并bean定义，但是RootBeanDefinition是目前bean工厂运行时bean定义的统一类型。
+					 * 因此，这里还需要将其他bean定义的形式转换为RootBeanDefinition
+					 */
 					if (bd instanceof RootBeanDefinition) {
+						// 注：如果是RootBeanDefinition，拷贝时就需要保留RootBeanDefinition本身的许多属性数据
 						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
 					}
 					else {
+						// 注：如果是非RootBeanDefinition，拷贝时就需要只需要拷贝AbstractBeanDefinition属性数据
 						mbd = new RootBeanDefinition(bd);
 					}
 				}
 				else {
 					// Child bean definition: needs to be merged with parent.
-					BeanDefinition pbd;
+					// 注：如果存在父bean名，也就是当前是一个子bean定义，即需要与父bean定义进行合并
+					BeanDefinition pbd;		// 注：用于存储父级bean定义
 					try {
+						// 注：获取父bean的规范名(已处理前缀、别名)
 						String parentBeanName = transformedBeanName(bd.getParentName());
 						if (!beanName.equals(parentBeanName)) {
+							// 注：这里通过公共方法获取beanName的合并bean定义，可能父bean定义来自于父工厂(猜测)。
 							pbd = getMergedBeanDefinition(parentBeanName);
 						}
 						else {
+							// 注：如果父bean名和子bean名相同，那就能够确定父bean定义肯定在父bean工厂中
 							BeanFactory parent = getParentBeanFactory();
+							// 注：ConfigurableBeanFactory类型是实现父子工厂最低类型要求，然后调用对应方法获取父bean定义。
 							if (parent instanceof ConfigurableBeanFactory) {
 								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
 							}
@@ -1402,15 +1431,25 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						}
 					}
 					catch (NoSuchBeanDefinitionException ex) {
+						// 注：获取不到pbd抛出异常，pbd肯定不会null
 						throw new BeanDefinitionStoreException(bd.getResourceDescription(), beanName,
 								"Could not resolve parent bean definition '" + bd.getParentName() + "'", ex);
 					}
 					// Deep copy with overridden values.
+					/**
+					 * 注：这里是合并bean定义的重点操作。
+					 * 1. 根据父bean定义来创建一个RootBeanDefinition实例。
+					 * 	  注意pbd的类型为BeanDefinition。因此合并bean定义不会考虑RootBeanDefinition类型的数据。
+					 * 2. 使用子bean定义来覆盖通过父bean定义创建的bean定义--也可理解为子bean定义覆盖父bean定义(实际这种说法不准确)
+					 *	  需要注意overrideFrom函数具体含义。并非简单的覆盖！有的属性数据可继承，有的不可、也有的是合并。
+					 *	  具体不同属性如何合并，参考overrideFrom函数注释。
+					 */
 					mbd = new RootBeanDefinition(pbd);
 					mbd.overrideFrom(bd);
 				}
 
 				// Set default singleton scope, if not configured before.
+				// 注：如果合并bean定义没有配置作用域，这里设置为默认的单例作用域
 				if (!StringUtils.hasLength(mbd.getScope())) {
 					mbd.setScope(SCOPE_SINGLETON);
 				}
@@ -1419,23 +1458,37 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// Let's correct this on the fly here, since this might be the result of
 				// parent-child merging for the outer bean, in which case the original inner bean
 				// definition will not have inherited the merged outer bean's singleton status.
+				/**
+				 * 注：单例bean不能包含非单例内部bean。原因是spring容器创建单例bean仅有一次，无法获得多个不同的非单例内部bean。
+				 * 由于合并父子bean定义的原因，外部bean定义在合并后可能会改变其作用域为单例，
+				 * 并且原有的内部bean也不会从已合并bean定义继承单例状态，因此需要在这里赶紧纠正外部bean的作用域状态。
+				 */
 				if (containingBd != null && !containingBd.isSingleton() && mbd.isSingleton()) {
-					mbd.setScope(containingBd.getScope());
+					mbd.setScope(containingBd.getScope());	// 注：异常情况，将内部bean的作用域赋值到外部bean的作用域上
 				}
 
 				// Cache the merged bean definition for the time being
 				// (it might still get re-merged later on in order to pick up metadata changes)
+				/**
+				 * 注：暂时缓存已合并的bean定义
+				 * （为了获取元数据的变动，可能后续还会重新合并）
+				 * -- 从这里看，cacheBeanMetadata表示缓存元数据，且不具有内部bean，会缓存已合并bean
+				 */
 				if (containingBd == null && isCacheBeanMetadata()) {
 					this.mergedBeanDefinitions.put(beanName, mbd);
 				}
 			}
 			if (previous != null) {
+				// 注：合并生成实际上是没有RootBeanDefinition类定义的属性数据的。
+				// 因此，如果前后的合并bean定义类名、工厂bean类名、工厂方法名都相同的话，那么RootBeanDefinition的一些需解析的缓存属性也可以直接复制即可。
+				// 可复制数据有：目标类型(包装后)、是否为工厂bean标记，解析后的确定类型的Class对象、工厂方法返回类型、自查工厂方法的候选者
 				copyRelevantMergedBeanDefinitionCaches(previous, mbd);
 			}
 			return mbd;
 		}
 	}
 
+	// 注：相关说明如上
 	private void copyRelevantMergedBeanDefinitionCaches(RootBeanDefinition previous, RootBeanDefinition mbd) {
 		if (ObjectUtils.nullSafeEquals(mbd.getBeanClassName(), previous.getBeanClassName()) &&
 				ObjectUtils.nullSafeEquals(mbd.getFactoryBeanName(), previous.getFactoryBeanName()) &&
@@ -1635,6 +1688,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param typesToMatch the types to match in case of internal type matching purposes
 	 * (also signals that the returned {@code Class} will never be exposed to application code)
 	 * @return the type of the bean, or {@code null} if not predictable
+	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108348807
 	 */
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {

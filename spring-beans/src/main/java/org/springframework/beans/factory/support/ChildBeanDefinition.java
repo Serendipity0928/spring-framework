@@ -24,6 +24,8 @@ import org.springframework.util.ObjectUtils;
 /**
  * Bean definition for beans which inherit settings from their parent.
  * Child bean definitions have a fixed dependency on a parent bean definition.
+ * 注：子bean定义表示的是从其父bean定义继承而来的bean定义。
+ * 并且，子bean定义与父bean定义之间有着固定的依赖关系。
  *
  * <p>A child bean definition will inherit constructor argument values,
  * property values and method overrides from the parent, with the option
@@ -31,12 +33,17 @@ import org.springframework.util.ObjectUtils;
  * method are specified, they will override the corresponding parent settings.
  * The remaining settings will <i>always</i> be taken from the child definition:
  * depends on, autowire mode, dependency check, singleton, lazy init.
+ * 注：子bean定义会从其父bean定义继承构造器参数值、属性值以及重写方法，并且可以自主增加新的值。
+ * 如果子bean定义中指定了初始化方法、销毁方法或者静态工厂方法，那么这些将会覆盖对应的父bean定义配置。
+ * 其余剩下的配置，比如依赖、自动装配模式、单例、懒加载等总是会从子bean定义中获取。
  *
  * <p><b>NOTE:</b> Since Spring 2.5, the preferred way to register bean
  * definitions programmatically is the {@link GenericBeanDefinition} class,
  * which allows to dynamically define parent dependencies through the
  * {@link GenericBeanDefinition#setParentName} method. This effectively
  * supersedes the ChildBeanDefinition class for most use cases.
+ * 注：自动Spring2.5之后，推荐用户编程注册GenericBeanDefinition类型的bean，这个类型bean也可以通过setParentName方法设置父bean定义。
+ * 这在大多数例子中都有效取代了ChildBeanDefinition
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -46,6 +53,7 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class ChildBeanDefinition extends AbstractBeanDefinition {
 
+	// 注：父bean定义名称
 	@Nullable
 	private String parentName;
 
@@ -53,6 +61,7 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new ChildBeanDefinition for the given parent, to be
 	 * configured through its bean properties and configuration methods.
+	 * 注：指定父bean定义的名称创建一个子bean定义。
 	 * @param parentName the name of the parent bean
 	 * @see #setBeanClass
 	 * @see #setScope
@@ -66,6 +75,7 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Create a new ChildBeanDefinition for the given parent.
+	 * 注：指定父bean定义名称、属性值来创建一个子bean定义
 	 * @param parentName the name of the parent bean
 	 * @param pvs the additional property values of the child
 	 */
@@ -76,6 +86,7 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Create a new ChildBeanDefinition for the given parent.
+	 * 注：指定父bean定义名称、属性值、构造器参数值来创建一个子bean定义
 	 * @param parentName the name of the parent bean
 	 * @param cargs the constructor argument values to apply
 	 * @param pvs the additional property values of the child
@@ -90,6 +101,7 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new ChildBeanDefinition for the given parent,
 	 * providing constructor arguments and property values.
+	 * 注：指定父bean定义名称、bean类型、属性值、构造器参数值来创建一个子bean定义
 	 * @param parentName the name of the parent bean
 	 * @param beanClass the class of the bean to instantiate
 	 * @param cargs the constructor argument values to apply
@@ -107,6 +119,8 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	 * Create a new ChildBeanDefinition for the given parent,
 	 * providing constructor arguments and property values.
 	 * Takes a bean class name to avoid eager loading of the bean class.
+	 * 注：指定父bean定义名称、bean名称、属性值、构造器参数值来创建一个子bean定义
+	 * 之所有使用类名是为了避免过早的加载该类。
 	 * @param parentName the name of the parent bean
 	 * @param beanClassName the name of the class to instantiate
 	 * @param cargs the constructor argument values to apply
@@ -123,28 +137,31 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new ChildBeanDefinition as deep copy of the given
 	 * bean definition.
+	 * 注：根据指定的子bean定义来拷贝一个子bean定义
 	 * @param original the original bean definition to copy from
 	 */
 	public ChildBeanDefinition(ChildBeanDefinition original) {
 		super(original);
 	}
 
-
+	// 注：设置当前bean定义的父定义名。
 	@Override
 	public void setParentName(@Nullable String parentName) {
 		this.parentName = parentName;
 	}
 
+	// 注：返回当前bean定义的父定义
 	@Override
 	@Nullable
 	public String getParentName() {
 		return this.parentName;
 	}
 
+	// 注：bean定义的验证过程【registerBeanDefinition的最后一步】
 	@Override
 	public void validate() throws BeanDefinitionValidationException {
 		super.validate();
-		if (this.parentName == null) {
+		if (this.parentName == null) {		// 注：必须存在父beanName
 			throw new BeanDefinitionValidationException("'parentName' must be set in ChildBeanDefinition");
 		}
 	}

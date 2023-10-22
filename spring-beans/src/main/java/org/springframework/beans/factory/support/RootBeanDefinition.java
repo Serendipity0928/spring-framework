@@ -106,6 +106,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/** Package-visible field for caching a unique factory method candidate for introspection.
 	 * 注：用于缓存用于自查工厂方法的候选者
+	 * 疑问：普通类就有？
 	 * */
 	@Nullable
 	volatile Method factoryMethodToIntrospect;
@@ -155,13 +156,15 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile Boolean beforeInstantiationResolved;
 
-	// 注：缓存一些
+	// 注：缓存一些注解需要注入的属性值
 	@Nullable
 	private Set<Member> externallyManagedConfigMembers;
 
+	// 注：注册外部的初始化方法
 	@Nullable
 	private Set<String> externallyManagedInitMethods;
 
+	// 注：注册外部的销毁方法
 	@Nullable
 	private Set<String> externallyManagedDestroyMethods;
 
@@ -169,6 +172,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition, to be configured through its bean
 	 * properties and configuration methods.
+	 * 注：无参构造初始化根bean定义
 	 * @see #setBeanClass
 	 * @see #setScope
 	 * @see #setConstructorArgumentValues
@@ -180,6 +184,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Create a new RootBeanDefinition for a singleton.
+	 * 创建一个指定类型的根定义，一般是单例。
 	 * @param beanClass the class of the bean to instantiate
 	 * @see #setBeanClass
 	 */
@@ -191,6 +196,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition for a singleton bean, constructing each instance
 	 * through calling the given supplier (possibly a lambda or method reference).
+	 *创建一个单例bean的根bean定义。通过调用传进来的supplier逻辑(可能是lambda表示或者方法引用)来创建实例。
 	 * @param beanClass the class of the bean to instantiate
 	 * @param instanceSupplier the supplier to construct a bean instance,
 	 * as an alternative to a declaratively specified factory method
@@ -206,6 +212,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition for a scoped bean, constructing each instance
 	 * through calling the given supplier (possibly a lambda or method reference).
+	 * 创建一个指定作用于的单例bean，并且提供bean实例化逻辑。
 	 * @param beanClass the class of the bean to instantiate
 	 * @param scope the name of the corresponding scope
 	 * @param instanceSupplier the supplier to construct a bean instance,
@@ -223,6 +230,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition for a singleton,
 	 * using the given autowire mode.
+	 * 创建一个指定自动注入模式的单例bean定义。
+	 * 并决定是否要进行依赖检查，对于构造器装配模式，不需要依赖检查，即忽略。
 	 * @param beanClass the class of the bean to instantiate
 	 * @param autowireMode by name or type, using the constants in this interface
 	 * @param dependencyCheck whether to perform a dependency check for objects
@@ -240,6 +249,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition for a singleton,
 	 * providing constructor arguments and property values.
+	 * 注：创建一个指定构造器参数以及属性值的单例bean定义
 	 * @param beanClass the class of the bean to instantiate
 	 * @param cargs the constructor argument values to apply
 	 * @param pvs the property values to apply
@@ -255,6 +265,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * Create a new RootBeanDefinition for a singleton,
 	 * providing constructor arguments and property values.
 	 * <p>Takes a bean class name to avoid eager loading of the bean class.
+	 * 注：创建一个指定bean类型名的单例bean。
+	 * 之所有使用类名是为了避免过早的加载该类。
 	 * @param beanClassName the name of the class to instantiate
 	 */
 	public RootBeanDefinition(String beanClassName) {
@@ -265,6 +277,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * Create a new RootBeanDefinition for a singleton,
 	 * providing constructor arguments and property values.
 	 * <p>Takes a bean class name to avoid eager loading of the bean class.
+	 * 注：创建一个指定构造器参数以及属性值的单例bean定义。
+	 * 之所有使用类名是为了避免过早的加载该类。
 	 * @param beanClassName the name of the class to instantiate
 	 * @param cargs the constructor argument values to apply
 	 * @param pvs the property values to apply
@@ -277,6 +291,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition as deep copy of the given
 	 * bean definition.
+	 * 注：通过已有的根bean定义来创建一个新的根bean定义。-相当于深拷贝
 	 * @param original the original bean definition to copy from
 	 */
 	public RootBeanDefinition(RootBeanDefinition original) {
@@ -292,6 +307,9 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Create a new RootBeanDefinition as deep copy of the given
 	 * bean definition.
+	 * 注：通过已有的bean定义来创建一个新的根bean定义。
+	 * - 这个无法拷贝AbstractBeanDefinition以下类型的数据了。
+	 * - 在合并bean的时，父bean定义会使用这个构造器重新创建一个，这也意味着合并bean是指处理AbstractBeanDefinition数据即可。
 	 * @param original the original bean definition to copy from
 	 */
 	RootBeanDefinition(BeanDefinition original) {
@@ -299,11 +317,13 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	}
 
 
+	// 注：返回当前bean定义的父定义（肯定为null）
 	@Override
 	public String getParentName() {
 		return null;
 	}
 
+	// 注：设置当前bean定义的父定义名（肯定不允许设置）
 	@Override
 	public void setParentName(@Nullable String parentName) {
 		if (parentName != null) {
@@ -313,6 +333,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Register a target definition that is being decorated by this bean definition.
+	 * 注：注册被当前根bean定义装饰的目标定义
 	 */
 	public void setDecoratedDefinition(@Nullable BeanDefinitionHolder decoratedDefinition) {
 		this.decoratedDefinition = decoratedDefinition;
@@ -320,6 +341,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Return the target definition that is being decorated by this bean definition, if any.
+	 * 注：返回当前bean定义装饰的目标bean定义
 	 */
 	@Nullable
 	public BeanDefinitionHolder getDecoratedDefinition() {
@@ -329,6 +351,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Specify the {@link AnnotatedElement} defining qualifiers,
 	 * to be used instead of the target class or factory method.
+	 * 注：设置定义的注解信息
 	 * @since 4.3.3
 	 * @see #setTargetType(ResolvableType)
 	 * @see #getResolvedFactoryMethod()
@@ -340,6 +363,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Return the {@link AnnotatedElement} defining qualifiers, if any.
 	 * Otherwise, the factory method and target class will be checked.
+	 * 注：返回注解信息
 	 * @since 4.3.3
 	 */
 	@Nullable
@@ -349,6 +373,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Specify a generics-containing target type of this bean definition, if known in advance.
+	 * 注：如果提前知道当前bean定义实例化后的类型(通用包装)，通过这个方法设置
 	 * @since 4.3.3
 	 */
 	public void setTargetType(ResolvableType targetType) {
@@ -357,6 +382,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Specify the target type of this bean definition, if known in advance.
+	 * 注：如果提前知道当前bean定义实例化后的类型，通过这个方法设置
 	 * @since 3.2.2
 	 */
 	public void setTargetType(@Nullable Class<?> targetType) {
@@ -366,6 +392,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Return the target type of this bean definition, if known
 	 * (either specified in advance or resolved on first instantiation).
+	 * 注：返回当前bean定义解析后的最终类型
 	 * @since 3.2.2
 	 */
 	@Nullable
@@ -382,6 +409,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * either from runtime-cached type information or from configuration-time
 	 * {@link #setTargetType(ResolvableType)} or {@link #setBeanClass(Class)},
 	 * also considering resolved factory method definitions.
+	 * 注：返回当前bean定义的可解析类型。
+	 * 具体实现就是使用ResolvableType包装下bean的Class对象
 	 * @since 5.1
 	 * @see #setTargetType(ResolvableType)
 	 * @see #setBeanClass(Class)
@@ -407,6 +436,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Determine preferred constructors to use for default construction, if any.
 	 * Constructor arguments will be autowired if necessary.
+	 * 注：决定应该使用哪个默认构造器
 	 * @return one or more preferred constructors, or {@code null} if none
 	 * (in which case the regular no-arg default constructor will be called)
 	 * @since 5.1
@@ -418,6 +448,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Specify a factory method name that refers to a non-overloaded method.
+	 * 注：指定一个不会被重载的工厂方法
 	 */
 	public void setUniqueFactoryMethodName(String name) {
 		Assert.hasText(name, "Factory method name must not be empty");
@@ -427,6 +458,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Specify a factory method name that refers to an overloaded method.
+	 * 注：指定一个会被重载的工厂方法
 	 * @since 5.2
 	 */
 	public void setNonUniqueFactoryMethodName(String name) {
@@ -437,6 +469,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Check whether the given candidate qualifies as a factory method.
+	 * 注：检查指定的方法是否是工厂方法
 	 */
 	public boolean isFactoryMethod(Method candidate) {
 		return candidate.getName().equals(getFactoryMethodName());
@@ -444,6 +477,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Set a resolved Java Method for the factory method on this bean definition.
+	 * 注：设置一个已解析的java方法作为当前bean定义的工厂方法
 	 * @param method the resolved factory method, or {@code null} to reset it
 	 * @since 5.2
 	 */
@@ -453,6 +487,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/**
 	 * Return the resolved factory method as a Java Method object, if available.
+	 * 返回已解析的工厂方法
 	 * @return the factory method, or {@code null} if not found or not resolved yet
 	 */
 	@Nullable
@@ -460,6 +495,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		return this.factoryMethodToIntrospect;
 	}
 
+	// 注：注册外部的配置成员
 	public void registerExternallyManagedConfigMember(Member configMember) {
 		synchronized (this.postProcessingLock) {
 			if (this.externallyManagedConfigMembers == null) {
@@ -469,6 +505,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		}
 	}
 
+	// 注：判断指定的成员类是否为当前bean定义的外部配置成员
 	public boolean isExternallyManagedConfigMember(Member configMember) {
 		synchronized (this.postProcessingLock) {
 			return (this.externallyManagedConfigMembers != null &&
@@ -476,6 +513,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		}
 	}
 
+	// 注：注册外部的初始化方法
 	public void registerExternallyManagedInitMethod(String initMethod) {
 		synchronized (this.postProcessingLock) {
 			if (this.externallyManagedInitMethods == null) {
@@ -485,6 +523,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		}
 	}
 
+	// 注：判断指定的成员类是否为当前bean定义的初始化方法
 	public boolean isExternallyManagedInitMethod(String initMethod) {
 		synchronized (this.postProcessingLock) {
 			return (this.externallyManagedInitMethods != null &&
@@ -492,6 +531,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		}
 	}
 
+	// 注：注册外部的销毁方法
 	public void registerExternallyManagedDestroyMethod(String destroyMethod) {
 		synchronized (this.postProcessingLock) {
 			if (this.externallyManagedDestroyMethods == null) {
@@ -501,6 +541,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		}
 	}
 
+	// 注：判断指定的成员类是否为当前bean定义的销毁方法
 	public boolean isExternallyManagedDestroyMethod(String destroyMethod) {
 		synchronized (this.postProcessingLock) {
 			return (this.externallyManagedDestroyMethods != null &&
@@ -509,6 +550,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	}
 
 
+	// 注：拷贝方法就是利用其拷贝构造器
 	@Override
 	public RootBeanDefinition cloneBeanDefinition() {
 		return new RootBeanDefinition(this);
