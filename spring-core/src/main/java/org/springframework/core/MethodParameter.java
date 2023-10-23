@@ -490,6 +490,7 @@ public class MethodParameter {
 
 	/**
 	 * Return the containing class for this method parameter.
+	 * 注：返回当前方法包含的类型(默认是声明类型)
 	 * @return a specific containing class (potentially a subclass of the
 	 * declaring class), or otherwise simply the declaring class itself
 	 * @see #getDeclaringClass()

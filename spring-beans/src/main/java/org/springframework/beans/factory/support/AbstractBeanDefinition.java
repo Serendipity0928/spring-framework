@@ -527,7 +527,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return whether this definition specifies a bean class.
-	 * 注：判断是否当前bean定义制定了bean类型
+	 * 注：判断是否当前bean定义指定了bean类型
 	 * @see #getBeanClass()
 	 * @see #setBeanClass(Class)
 	 * @see #resolveBeanClass(ClassLoader)
@@ -541,7 +541,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * specified class name if necessary. Will also reload a specified
 	 * Class from its name when called with the bean class already resolved.
 	 * 注：根据指定的bean类型名，确定包装bean的类型-Class对象。
-	 * 注意，即是当前bean类型已经解析了，这里我们还是会重新根据beanName加载
+	 * 注意，即是当前bean类型已经解析了，这里我们还是会重新根据beanName加载【支持bean类型定期重新加载】
 	 * @param classLoader the ClassLoader to use for resolving a (potential) class name
 	 * @return the resolved bean class
 	 * @throws ClassNotFoundException if the class name could be resolved

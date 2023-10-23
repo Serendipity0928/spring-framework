@@ -93,19 +93,22 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	volatile Class<?> resolvedTargetType;
 
 	/** Package-visible field for caching if the bean is a factory bean.
-	 * 注：是否当前bean为FactoryBean
+	 * 注：是否当前bean为FactoryBean；
+	 * 延迟初始化属性，后续会根据factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
 	 * */
 	@Nullable
 	volatile Boolean isFactoryBean;
 
 	/** Package-visible field for caching the return type of a generically typed factory method.
 	 * 注：当前bean的工厂方法返回的类型
+	 * 延迟初始化属性，后续factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
 	 * */
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
 	/** Package-visible field for caching a unique factory method candidate for introspection.
 	 * 注：用于缓存用于自查工厂方法的候选者
+	 * 非延迟初始化属性；
 	 * 疑问：普通类就有？
 	 * */
 	@Nullable

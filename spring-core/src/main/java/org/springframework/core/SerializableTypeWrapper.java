@@ -192,7 +192,8 @@ final class SerializableTypeWrapper {
 
 	/**
 	 * A {@link Serializable} interface providing access to a {@link Type}
-	 * 注：用于包装某具体类型(Type)的序列化接口
+	 * 注：用于提供某具体类型(Type)的序列化接口
+	 * 具体啥意思呢？TypeProvider就三个内部实现类，分别是属性、方法、类型方法调用-这些都是获取类型的，相当于类型来源，即类型提供者。
 	 * Java序列化：https://www.anquanke.com/post/id/169563?display=mobile#h3-1
 	 */
 	@SuppressWarnings("serial")

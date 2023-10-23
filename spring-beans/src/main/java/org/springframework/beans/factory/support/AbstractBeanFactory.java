@@ -135,7 +135,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * */
 	private boolean cacheBeanMetadata = true;
 
-	/** Resolution strategy for expressions in bean definition values. */
+	/** Resolution strategy for expressions in bean definition values.
+	 * 注：用于解析bean定义值的表达式解析器；比如解析bean类名
+	 * */
 	@Nullable
 	private BeanExpressionResolver beanExpressionResolver;
 
@@ -1121,7 +1123,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
 		String beanName = transformedBeanName(name);	// 注：转换bean名称(去除&前缀、处理别名)
 		/**
-		 * 注：尝试获取单例bean实例，通过bean示例来判断是否为FactoryBean。
+		 * 注：尝试获取单例bean实例，通过bean示例来判断是否为FactoryBean。【一般这里是获取不到实例的】
 		 * 	这里入参不允许早期引用，这就意味着getSingleton实际上就是通过一级缓存查找该bean是否已实例化
 		 */
 		Object beanInstance = getSingleton(beanName, false);
@@ -1129,10 +1131,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			return (beanInstance instanceof FactoryBean);	// 注：直接通过实例判断factoryBean类型
 		}
 		// No singleton instance found -> check bean definition.
+		// 注：没法通过bean单例来判断的话，就只能检查bean定义了。
 		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
 			// No bean definition found in this factory -> delegate to parent.
+			// 如果当前bean定义不在当前工厂内，那就通过父工厂来处理
 			return ((ConfigurableBeanFactory) getParentBeanFactory()).isFactoryBean(name);
 		}
+
+		// 注：下面完全就是根据beanName以及合并后的bean定义来判断是否为FactoryBean类型。
 		return isFactoryBean(beanName, getMergedLocalBeanDefinition(beanName));
 	}
 
@@ -1553,12 +1559,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Resolve the bean class for the specified bean definition,
 	 * resolving a bean class name into a Class reference (if necessary)
 	 * and storing the resolved Class in the bean definition for further use.
+	 * 注：根据指定的bean定义解析bean的类型，
+	 * 内部逻辑是将bean的名称解析为bean的引用并且将解析后的类型信息缓存在bean定义中以备后续之用。
 	 * @param mbd the merged bean definition to determine the class for
 	 * @param beanName the name of the bean (for error handling purposes)
 	 * @param typesToMatch the types to match in case of internal type matching purposes
 	 * (also signals that the returned {@code Class} will never be exposed to application code)
 	 * @return the resolved bean class (or {@code null} if none)
 	 * @throws CannotLoadBeanClassException if we failed to load the class
+	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108345288
 	 */
 	@Nullable
 	protected Class<?> resolveBeanClass(RootBeanDefinition mbd, String beanName, Class<?>... typesToMatch)
@@ -1566,44 +1575,70 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		try {
 			if (mbd.hasBeanClass()) {
+				// 注：如果bean定义中指定了bean的类型，就直接返回即可。
 				return mbd.getBeanClass();
 			}
 			if (System.getSecurityManager() != null) {
+				/**
+				 * 注：安全管理器相关可参考：
+				 * https://www.jianshu.com/p/3fe79e24f8a1
+				 */
 				return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>)
 						() -> doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());
 			}
 			else {
+
 				return doResolveBeanClass(mbd, typesToMatch);
 			}
 		}
 		catch (PrivilegedActionException pae) {
+			// 注：无法使用特权异常
 			ClassNotFoundException ex = (ClassNotFoundException) pae.getException();
 			throw new CannotLoadBeanClassException(mbd.getResourceDescription(), beanName, mbd.getBeanClassName(), ex);
 		}
 		catch (ClassNotFoundException ex) {
+			// 注：未找到对应类异常
 			throw new CannotLoadBeanClassException(mbd.getResourceDescription(), beanName, mbd.getBeanClassName(), ex);
 		}
 		catch (LinkageError err) {
+			// LinkageError:LinkageError的子类表明一个类对另一个类具有一定的依赖性。但是，后一类在前一类编译之后发生了
+			// 不兼容的变化
 			throw new CannotLoadBeanClassException(mbd.getResourceDescription(), beanName, mbd.getBeanClassName(), err);
 		}
 	}
 
+	// 注：根据已合并bean定义来解析bean的类型。注意，这里的私有方法名前面有do.
 	@Nullable
 	private Class<?> doResolveBeanClass(RootBeanDefinition mbd, Class<?>... typesToMatch)
 			throws ClassNotFoundException {
 
+		// 注：获取该工厂加载bean的类加载器
 		ClassLoader beanClassLoader = getBeanClassLoader();
+		/**
+		 * 为什么叫这个为动态类加载器呢？因为工厂可能有临时类加载器。
+		 */
+		// 注：默认使用bean类加载器
 		ClassLoader dynamicLoader = beanClassLoader;
+		// 注：标识已合并bean定义是否需要被dynamicLoader重新解析、加载、标记。默认不需要；
 		boolean freshResolve = false;
 
 		if (!ObjectUtils.isEmpty(typesToMatch)) {
 			// When just doing type checks (i.e. not creating an actual instance yet),
 			// use the specified temporary class loader (e.g. in a weaving scenario).
+			/**
+			 * 注：我们仅仅使用指定的类加载器进行类型检查，而不会进行实际的实例创建。
+			 */
 			ClassLoader tempClassLoader = getTempClassLoader();
 			if (tempClassLoader != null) {
+				// 注：如果存在临时类加载器，那么后续就使用临时类加载器，并且设置重新加载标识。
 				dynamicLoader = tempClassLoader;
 				freshResolve = true;
 				if (tempClassLoader instanceof DecoratingClassLoader) {
+					/**
+					 * 注：如果临时类加载器是DecoratingClassLoader类型，就将匹配的类型在加载器中排除掉。
+					 * 这意味后续类型的加载都交给其父加载器(一般是应用类加载器)进行加载执行。
+					 * DecoratingClassLoader类是装饰ClassLoader的类。提供了对类、包排除的通用处理。
+					 */
 					DecoratingClassLoader dcl = (DecoratingClassLoader) tempClassLoader;
 					for (Class<?> typeToMatch : typesToMatch) {
 						dcl.excludeClass(typeToMatch.getName());
@@ -1612,6 +1647,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
+		// 注：获取bean定义的bean类名(bean类未加载的情况下返回null) 【这里是否不可能为Null?】
 		String className = mbd.getBeanClassName();
 		if (className != null) {
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
@@ -1646,12 +1682,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Resolve regularly, caching the result in the BeanDefinition...
+		/**
+		 * 注：定义重新解析，并将加载的结果缓存的bean定义中。
+		 * 疑问：这是啥意思？className这里为null,resolveBeanClass方法肯定会返回null呀...
+		 */
 		return mbd.resolveBeanClass(beanClassLoader);
 	}
 
 	/**
 	 * Evaluate the given String as contained in a bean definition,
 	 * potentially resolving it as an expression.
+	 * 注：解析可能需要作为表达式进行解析的bean定义中包含的字符串；
+	 * 比如bean类名
 	 * @param value the value to check
 	 * @param beanDefinition the bean definition that the value comes from
 	 * @return the resolved value
@@ -1660,9 +1702,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	protected Object evaluateBeanDefinitionString(@Nullable String value, @Nullable BeanDefinition beanDefinition) {
 		if (this.beanExpressionResolver == null) {
+			// 注：如果不存在bean表达式解析器，那就直接返回即可。
 			return value;
 		}
 
+		// TODO: 2023/10/23  https://blog.csdn.net/qq_30321211/article/details/108345288
 		Scope scope = null;
 		if (beanDefinition != null) {
 			String scopeName = beanDefinition.getScope();
@@ -1679,24 +1723,30 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * specified bean. Called by {@link #getType} and {@link #isTypeMatch}.
 	 * Does not need to handle FactoryBeans specifically, since it is only
 	 * supposed to operate on the raw bean type.
+	 * 注：对于指定的bean(已经处理的bean实例)预测其最终bean的类型。该方法会被getType、isTypeMatch方法调用。
+	 * 不需要特地处理FactoryBean的情况，因为他只应该对原始bean类型进行操作(不太理解...)。
 	 * <p>This implementation is simplistic in that it is not able to
 	 * handle factory methods and InstantiationAwareBeanPostProcessors.
 	 * It only predicts the bean type correctly for a standard bean.
 	 * To be overridden in subclasses, applying more sophisticated type detection.
+	 * 注：该方法是一个简化的实现，因为它不能够处理工厂方法以及实例化后置处理器。
+	 * 这个方案仅预测标准bean的正确最终的类型。
+	 * 子工厂类应该重写这个方法，以支持更加复杂的类型推断。【该方法被AbstractAutowireCapableBeanFactory复写】
 	 * @param beanName the name of the bean
 	 * @param mbd the merged bean definition to determine the type for
 	 * @param typesToMatch the types to match in case of internal type matching purposes
 	 * (also signals that the returned {@code Class} will never be exposed to application code)
+	 * 注：在内部类型匹配过程时需要指定的类型。（这也意味着返回的类不会暴漏在应用程序代码中）
 	 * @return the type of the bean, or {@code null} if not predictable
 	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108348807
 	 */
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
-		Class<?> targetType = mbd.getTargetType();
+		Class<?> targetType = mbd.getTargetType();	// 注：判断当前bean定义是否有目标类型
 		if (targetType != null) {
 			return targetType;
 		}
-		if (mbd.getFactoryMethodName() != null) {
+		if (mbd.getFactoryMethodName() != null) {	// 注：bean定义无factoryMethodName，也就无法继续预测了
 			return null;
 		}
 		return resolveBeanClass(mbd, beanName, typesToMatch);
@@ -1704,12 +1754,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	/**
 	 * Check whether the given bean is defined as a {@link FactoryBean}.
+	 * 注：根据给定的合并后的bean定义来判断是否为FactoryBean
 	 * @param beanName the name of the bean
 	 * @param mbd the corresponding bean definition
 	 */
 	protected boolean isFactoryBean(String beanName, RootBeanDefinition mbd) {
 		Boolean result = mbd.isFactoryBean;
 		if (result == null) {
+			/**
+			 * 注：如果bean定义的isFactoryBean属性为null，这就意味着该属性没有初始化。
+			 * 下面将根据bean定义来推断
+			 */
 			Class<?> beanType = predictBeanType(beanName, mbd, FactoryBean.class);
 			result = (beanType != null && FactoryBean.class.isAssignableFrom(beanType));
 			mbd.isFactoryBean = result;

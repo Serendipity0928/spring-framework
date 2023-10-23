@@ -486,6 +486,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of ListableBeanFactory interface
 	//---------------------------------------------------------------------
 
+	// 注：判断当前容器中是否存在指定beanName的bean定义
 	@Override
 	public boolean containsBeanDefinition(String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -923,6 +924,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			/**
 			 * 注：获取合并bean定义。注意，这里调用的是Local，即在当前上下文中获取。
 			 * 因为beanName是在本上下文中缓存，因此这里从当前上下文获取是合理的。但当前bean可能是可以继承父上下文的bean定义的吧(猜测)。
+			 * 另外，实际上这里很多bean都已经合并了。在处理Bean定义注册后置处理器时，需要获取容器中所有后置处理器的beanName也就已经合并了bean定义。
 			 */
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
