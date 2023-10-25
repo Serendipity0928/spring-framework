@@ -972,12 +972,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return the internal cache of pre-filtered post-processors,
 	 * freshly (re-)building it if necessary.
+	 * 注：返回预过滤后处理器的内部缓存，必要时可重新构建
 	 * @since 5.3
 	 */
 	BeanPostProcessorCache getBeanPostProcessorCache() {
 		BeanPostProcessorCache bpCache = this.beanPostProcessorCache;
 		if (bpCache == null) {
 			bpCache = new BeanPostProcessorCache();
+			// 注：所有的bean后置处理器都在this.beanPostProcessors属性中，下面过滤四种特有功能的后置处理器缓存起来
 			for (BeanPostProcessor bp : this.beanPostProcessors) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					bpCache.instantiationAware.add((InstantiationAwareBeanPostProcessor) bp);
@@ -2220,7 +2222,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	/**
 	 * Internal cache of pre-filtered post-processors.
-	 *
+	 * 注：用于可提前过滤的内部后置处理器缓存【四种特殊的】
 	 * @since 5.3
 	 */
 	static class BeanPostProcessorCache {

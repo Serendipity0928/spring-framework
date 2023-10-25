@@ -89,6 +89,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/** Package-visible field for caching the determined Class of a given bean definition.
 	 * 注：用于缓存bean定义确定的类型Class，权限为包可见(下同)
 	 * 延迟初始化属性，后续会在工厂判断bean类型时解析bean实例的类型，然后在一定情况下缓存最终类型
+	 * determineTargetType
 	 * */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
@@ -96,6 +97,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/** Package-visible field for caching if the bean is a factory bean.
 	 * 注：是否当前bean为FactoryBean；
 	 * 延迟初始化属性，后续会根据factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
+	 * isFactoryBean
 	 * */
 	@Nullable
 	volatile Boolean isFactoryBean;
@@ -103,6 +105,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/** Package-visible field for caching the return type of a generically typed factory method.
 	 * 注：当前bean的工厂方法返回的类型
 	 * 延迟初始化属性，后续factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
+	 * getTypeForFactoryMethod、resolveBeanClass两种地方都会缓存这个最终方法。
 	 * */
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
@@ -110,7 +113,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/** Package-visible field for caching a unique factory method candidate for introspection.
 	 * 注：用于缓存用于自查工厂方法的候选者
 	 * 非延迟初始化属性；
-	 * 疑问：普通类就有？
+	 * 疑问：普通类就有？有时间研究下面的方法逻辑
+	 * @see AbstractAutowireCapableBeanFactory#getTypeForFactoryMethod(java.lang.String, org.springframework.beans.factory.support.RootBeanDefinition, java.lang.Class[])
 	 * */
 	@Nullable
 	volatile Method factoryMethodToIntrospect;

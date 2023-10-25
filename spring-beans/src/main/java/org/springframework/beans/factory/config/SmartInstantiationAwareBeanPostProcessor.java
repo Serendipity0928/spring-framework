@@ -41,6 +41,8 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * Predict the type of the bean to be eventually returned from this
 	 * processor's {@link #postProcessBeforeInstantiation} callback.
 	 * <p>The default implementation returns {@code null}.
+	 * 注：通过当前后置处理器的回调来返回bean的预测类型；
+	 * 该方法默认返回null
 	 * @param beanClass the raw class of the bean
 	 * @param beanName the name of the bean
 	 * @return the type of the bean, or {@code null} if not predictable

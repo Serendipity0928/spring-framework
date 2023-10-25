@@ -134,7 +134,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/** Strategy for creating bean instances. */
 	private InstantiationStrategy instantiationStrategy;
 
-	/** Resolver strategy for method parameter names. */
+	/** Resolver strategy for method parameter names.
+	 * 注：方法参数名的解析策略
+	 * */
 	@Nullable
 	private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
@@ -168,7 +170,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/** Cache of unfinished FactoryBean instances: FactoryBean name to BeanWrapper. */
 	private final ConcurrentMap<String, BeanWrapper> factoryBeanInstanceCache = new ConcurrentHashMap<>();
 
-	/** Cache of candidate factory methods per factory class. */
+	/** Cache of candidate factory methods per factory class.
+	 * 注：缓存每个工厂类的候选工厂方法
+	 * */
 	private final ConcurrentMap<Class<?>, Method[]> factoryMethodCandidateCache = new ConcurrentHashMap<>();
 
 	/** Cache of filtered PropertyDescriptors: bean Class to PropertyDescriptor array. */
@@ -668,15 +672,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Override
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 注：根据bean定义的一系列信息来判断当前bean的目标类型。
 		Class<?> targetType = determineTargetType(beanName, mbd, typesToMatch);
 		// Apply SmartInstantiationAwareBeanPostProcessors to predict the
 		// eventual type after a before-instantiation shortcut.
+		// 注：这里应用SmartInstantiationAwareBeanPostProcessors后置处理器的预测bean类型回调方法
 		if (targetType != null && !mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			boolean matchingOnlyFactoryBean = typesToMatch.length == 1 && typesToMatch[0] == FactoryBean.class;
 			for (SmartInstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().smartInstantiationAware) {
-				Class<?> predicted = bp.predictBeanType(targetType, beanName);
+				Class<?> predicted = bp.predictBeanType(targetType, beanName);	// 注：调用后置处理器预测bean类型
 				if (predicted != null &&
 						(!matchingOnlyFactoryBean || FactoryBean.class.isAssignableFrom(predicted))) {
+					// 返回非null类型，并且不会替换掉FactoryBean类型，就返回回调结果。
 					return predicted;
 				}
 			}
@@ -733,59 +740,83 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * (also signals that the returned {@code Class} will never be exposed to application code)
 	 * @return the type for the bean if determinable, or {@code null} otherwise
 	 * @see #createBean
+	 * 注：参考资料-https://blog.csdn.net/qq_30321211/article/details/108347133
 	 */
 	@Nullable
 	protected Class<?> getTypeForFactoryMethod(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 注：先检查当前合并bean定义中是否已经缓存了工厂方法返回类型(ResolvableType实例)
 		ResolvableType cachedReturnType = mbd.factoryMethodReturnType;
 		if (cachedReturnType != null) {
+			// 注：每个ResolvableType实例在创建的时候都会缓存其解析后的Class类型【统一处理了泛型】。
 			return cachedReturnType.resolve();
 		}
 
+		/**
+		 * 注：当合并bean定义缓存中没有自举工厂方法(唯一)时，就会根据一系列逻辑来判断是否存在唯一的自举工厂方法(uniqueCandidate)，有就会缓存起来；
+		 * 如果有多个工厂方法，就需要判断其返回值是否存在共同的类型(commonType)。
+		 */
 		Class<?> commonType = null;
 		Method uniqueCandidate = mbd.factoryMethodToIntrospect;
 
+		// 注：如果不存在工厂方法对象
 		if (uniqueCandidate == null) {
 			Class<?> factoryClass;
 			boolean isStatic = true;
 
+			// 注：从合并bean定义中获取工厂Bean的名称
 			String factoryBeanName = mbd.getFactoryBeanName();
 			if (factoryBeanName != null) {
 				if (factoryBeanName.equals(beanName)) {
+					// 注：当前Bean和其工厂bean引同一个bean定义
 					throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 							"factory-bean reference points back to the same bean definition");
 				}
 				// Check declared factory method return type on factory class.
+				// 注：检查工厂类上声明的工厂方法返回类型
 				factoryClass = getType(factoryBeanName);
 				isStatic = false;
 			}
 			else {
 				// Check declared factory method return type on bean class.
+				// 注：根据合并bean定义的beanName、加载器等返回Class类型
 				factoryClass = resolveBeanClass(mbd, beanName, typesToMatch);
 			}
 
 			if (factoryClass == null) {
+				// 注：如果通过工厂Bean以及beanName都无法获取bean类型，只能返回Null
 				return null;
 			}
+			// 注：处理下Class类型；【如果是CGLIB动态生成类，则返回其父类型，即被代理类型】
 			factoryClass = ClassUtils.getUserClass(factoryClass);
 
 			// If all factory methods have the same return type, return that type.
 			// Can't clearly figure out exact method due to type converting / autowiring!
+			/**
+			 * 注：如果所有工厂方法都具有相同的返回类型，则返回该类型。
+			 * 由于类型转换/自动匹配，无法明确找出确切的方法。
+			 */
+			// 注：获取合并bean定义中的构造器参数值的数量，没有就是无参构造-0；
 			int minNrOfArgs =
 					(mbd.hasConstructorArgumentValues() ? mbd.getConstructorArgumentValues().getArgumentCount() : 0);
+			// 注：获取每个类型中的候选工厂方法，后续需遍历
 			Method[] candidates = this.factoryMethodCandidateCache.computeIfAbsent(factoryClass,
 					clazz -> ReflectionUtils.getUniqueDeclaredMethods(clazz, ReflectionUtils.USER_DECLARED_METHODS));
 
 			for (Method candidate : candidates) {
+				// 注：遍历候选方法中，静态的、bean定义中工厂名重名并且方法参数数量>bean定义中给出构造器参数数量  --> 这些都有可能是工厂方法
 				if (Modifier.isStatic(candidate.getModifiers()) == isStatic && mbd.isFactoryMethod(candidate) &&
 						candidate.getParameterCount() >= minNrOfArgs) {
 					// Declared type variables to inspect?
 					if (candidate.getTypeParameters().length > 0) {
+						// 注：该方法存在泛型类型
 						try {
 							// Fully resolve parameter names and argument values.
-							Class<?>[] paramTypes = candidate.getParameterTypes();
-							String[] paramNames = null;
+							// 注：完全解析参数名称和参数值
+							Class<?>[] paramTypes = candidate.getParameterTypes();	// 注：获取方法参数类型数组
+							String[] paramNames = null;		// 注：方法的参数需要进一步解析，解析后的参数名放置在当前数组内
 							ParameterNameDiscoverer pnd = getParameterNameDiscoverer();
 							if (pnd != null) {
+								// 注：使用参数名解析器处理候选参数名
 								paramNames = pnd.getParameterNames(candidate);
 							}
 							ConstructorArgumentValues cav = mbd.getConstructorArgumentValues();
@@ -802,13 +833,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 									usedValueHolders.add(valueHolder);
 								}
 							}
+							// 注：获取当前候选工厂方法的最终返回类型，该方法支持泛型情况下的目标对象获取
 							Class<?> returnType = AutowireUtils.resolveReturnTypeForFactoryMethod(
 									candidate, args, getBeanClassLoader());
+							/**
+							 * 注：如果commonType为null，并且解析后返回类型就是其本身的返回类型，那么这种情况下存在唯一的候选工厂方法
+							 * 下一次循环就不唯一了，赋值为Null
+							 */
 							uniqueCandidate = (commonType == null && returnType == candidate.getReturnType() ?
 									candidate : null);
+							/**
+							 * 注：当每次获取到工厂候选方法时，就用其返回类型和之前以获取到的公用类型来取个最低父类型。
+							 * 找不到共同父类型就返回null;
+							 */
 							commonType = ClassUtils.determineCommonAncestor(returnType, commonType);
 							if (commonType == null) {
 								// Ambiguous return types found: return null to indicate "not determinable".
+								// 注：由于存在多个工厂方法，无法准确判断返回类型
 								return null;
 							}
 						}
@@ -823,20 +864,28 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						commonType = ClassUtils.determineCommonAncestor(candidate.getReturnType(), commonType);
 						if (commonType == null) {
 							// Ambiguous return types found: return null to indicate "not determinable".
+							// 注：由于存在多个工厂方法，无法准确判断返回类型
 							return null;
 						}
 					}
 				}
 			}
 
-			mbd.factoryMethodToIntrospect = uniqueCandidate;
+			// TODO: 2023/10/25 这里赋值合并bean定义的自举唯一候选方法；至此一处可以初始化这个属性吗？
+			mbd.factoryMethodToIntrospect = uniqueCandidate;	
 			if (commonType == null) {
+				// 注：这个就意味着无法找到多个工厂方法共同的类型，进而也是无法判断类型的
 				return null;
 			}
 		}
 
 		// Common return type found: all factory methods return same type. For a non-parameterized
 		// unique candidate, cache the full type declaration context of the target factory method.
+		/**
+		 * 注：如果bean定义缓存中或者自举过程能够获取唯一的工厂候选方法，那就通过forMethodReturnType来解析方法的返回值；
+		 * 反之，则就需要根据自举过程多个工厂方法的共同父类型来返回。
+		 * 【这个工厂方法返回类型在这里也会被缓存在合并Bean缓存中】
+		 */
 		cachedReturnType = (uniqueCandidate != null ?
 				ResolvableType.forMethodReturnType(uniqueCandidate) : ResolvableType.forClass(commonType));
 		mbd.factoryMethodReturnType = cachedReturnType;
