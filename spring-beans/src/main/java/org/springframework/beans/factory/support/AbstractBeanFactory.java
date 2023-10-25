@@ -1587,7 +1587,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						() -> doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());
 			}
 			else {
-
+				// 注：根据已合并bean定义来加载bean的类型
 				return doResolveBeanClass(mbd, typesToMatch);
 			}
 		}
@@ -1650,15 +1650,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// 注：获取bean定义的bean类名(bean类未加载的情况下返回null) 【这里是否不可能为Null?】
 		String className = mbd.getBeanClassName();
 		if (className != null) {
+			// 注：解析bean定义中的字符串【这里就是解析类名中可能存在的表达式】
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
-				if (evaluated instanceof Class) {
+				// 注：4.2版本后bean的类名支持动态解析表达式
+				if (evaluated instanceof Class) { // 注：如果直接解析为类对象，返回！
 					return (Class<?>) evaluated;
 				}
-				else if (evaluated instanceof String) {
+				else if (evaluated instanceof String) {	// 注：解析后的类名
 					className = (String) evaluated;
-					freshResolve = true;
+					freshResolve = true;		// 注：需要重新刷新加载
 				}
 				else {
 					throw new IllegalStateException("Invalid class name expression result: " + evaluated);
@@ -1667,8 +1669,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			if (freshResolve) {
 				// When resolving against a temporary class loader, exit early in order
 				// to avoid storing the resolved Class in the bean definition.
+				/**
+				 * 注：需要重新加载beanClass时，需要注意的就是，如果我们使用临时类加载器加载，就不需要存储在bean定义中。
+				 * - 重新加载的class均不会存储在bean定义中
+				 */
 				if (dynamicLoader != null) {
 					try {
+						// 注：通过动态类加载器加载类
 						return dynamicLoader.loadClass(className);
 					}
 					catch (ClassNotFoundException ex) {
@@ -1677,6 +1684,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						}
 					}
 				}
+				// 注：使用bean加载器加载类
 				return ClassUtils.forName(className, dynamicLoader);
 			}
 		}
@@ -1707,6 +1715,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// TODO: 2023/10/23  https://blog.csdn.net/qq_30321211/article/details/108345288
+		// 注：获取bean定义作用范围Scope对象
 		Scope scope = null;
 		if (beanDefinition != null) {
 			String scopeName = beanDefinition.getScope();
@@ -1714,6 +1723,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				scope = getRegisteredScope(scopeName);
 			}
 		}
+
+		/**
+		 * 注：通过bean表达式解析器进行解析【具体实现类：StandardBeanExpressionResolver】
+		 * - 传入待解析的值
+		 * - 传入bean表达式的上下文(存有bean工厂、所在bean的作用域)
+		 */
 		return this.beanExpressionResolver.evaluate(value, new BeanExpressionContext(this, scope));
 	}
 
@@ -1736,7 +1751,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param mbd the merged bean definition to determine the type for
 	 * @param typesToMatch the types to match in case of internal type matching purposes
 	 * (also signals that the returned {@code Class} will never be exposed to application code)
-	 * 注：在内部类型匹配过程时需要指定的类型。（这也意味着返回的类不会暴漏在应用程序代码中）
+	 * 注：在内部类型匹配过程时需要指定的类型(临时类加载器将会忽略这些类)。（这也意味着返回的类不会暴漏在应用程序代码中）
 	 * @return the type of the bean, or {@code null} if not predictable
 	 * 参考：https://blog.csdn.net/qq_30321211/article/details/108348807
 	 */

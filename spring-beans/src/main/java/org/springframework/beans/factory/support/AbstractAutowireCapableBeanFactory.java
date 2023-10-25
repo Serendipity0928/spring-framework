@@ -664,6 +664,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return exposedObject;
 	}
 
+	// 注：对于指定的bean定义预测其最终bean的类型
 	@Override
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
@@ -685,7 +686,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Determine the target type for the given bean definition.
-	 * 注：决定了指定bean定义的目标类型
+	 * 注：判断指定bean定义的目标类型
 	 * @param beanName the name of the bean (for error handling purposes)
 	 * @param mbd the merged bean definition for the bean
 	 * @param typesToMatch the types to match in case of internal type matching purposes
@@ -694,12 +695,22 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Class<?> determineTargetType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		/**
+		 * 注：先通过bean定义中检查是否存在最终类型的缓存【targetType或resolvedTargetType】，不存在则返回null
+		 */
 		Class<?> targetType = mbd.getTargetType();
 		if (targetType == null) {
+			/**
+			 * 注：下面就是解析bean定义的目标类型(即bean实例化后所属类型)
+			 * 根据bean定义是否存在factoryMethodName属性来决定如何判断bean实例的类型：
+			 * - 存在工厂方法，那么工厂方法返回的类型实际上就是bean实例的类型，然后根据解析方法返回类型，进而返回对应的Class对象
+			 * - 不存在工厂方法，那需要根据beanClassName来加载Class对象。
+			 */
 			targetType = (mbd.getFactoryMethodName() != null ?
 					getTypeForFactoryMethod(beanName, mbd, typesToMatch) :
 					resolveBeanClass(mbd, beanName, typesToMatch));
 			if (ObjectUtils.isEmpty(typesToMatch) || getTempClassLoader() == null) {
+				// 注：使用临时类加载器加载的bean类型对象是不能缓存在bean定义中的。
 				mbd.resolvedTargetType = targetType;
 			}
 		}
@@ -710,9 +721,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * Determine the target type for the given bean definition which is based on
 	 * a factory method. Only called if there is no singleton instance registered
 	 * for the target bean already.
+	 * 注：根据bean定义中的工厂方法来判断bean实例的最终类型。
+	 * 该方法仅当单例bean实例尚未被注册时使用。（意思是如果已经存在该bean定义的实例，就直接通过实例获取其类型即可）
 	 * <p>This implementation determines the type matching {@link #createBean}'s
 	 * different creation strategies. As far as possible, we'll perform static
 	 * type checking to avoid creation of the target bean.
+	 * 注：该方法实现决定了不同createBean的创建策略匹配类型。我们将尽可能执行静态类型检查以避免创建目标bean.
 	 * @param beanName the name of the bean (for error handling purposes)
 	 * @param mbd the merged bean definition for the bean
 	 * @param typesToMatch the types to match in case of internal type matching purposes

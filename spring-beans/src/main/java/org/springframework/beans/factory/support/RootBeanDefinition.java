@@ -88,6 +88,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/** Package-visible field for caching the determined Class of a given bean definition.
 	 * 注：用于缓存bean定义确定的类型Class，权限为包可见(下同)
+	 * 延迟初始化属性，后续会在工厂判断bean类型时解析bean实例的类型，然后在一定情况下缓存最终类型
 	 * */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
