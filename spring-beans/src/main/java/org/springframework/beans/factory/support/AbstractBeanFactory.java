@@ -243,12 +243,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	/**
 	 * Return an instance, which may be shared or independent, of the specified bean.
-	 * @param name the name of the bean to retrieve
-	 * @param requiredType the required type of the bean to retrieve
+	 * 注：返回指定bean的实例(可能是单例或者原型)
+	 * @param name the name of the bean to retrieve // 注：要检索的bean名称
+	 * @param requiredType the required type of the bean to retrieve  // 注：要检索bena实例的类型
 	 * @param args arguments to use when creating a bean instance using explicit arguments
 	 * (only applied when creating a new instance as opposed to retrieving an existing one)
+	 * 注：当创建一个bean时通过该参数指定构造参数值。（仅仅当需要创建一个新实例时传入）
 	 * @param typeCheckOnly whether the instance is obtained for a type check,
-	 * not for actual use
+	 * not for actual use // 是否获取的实例仅仅用于类型检查，而不实际使用(即不需要缓存)
 	 * @return an instance of the bean
 	 * @throws BeansException if the bean could not be created
 	 */
@@ -1950,16 +1952,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Get the object for the given bean instance, either the bean
 	 * instance itself or its created object in case of a FactoryBean.
-	 * @param beanInstance the shared bean instance
-	 * @param name the name that may include factory dereference prefix
-	 * @param beanName the canonical bean name
-	 * @param mbd the merged bean definition
+	 * 注：根据指定的bean实例返回向外的bean实例-要么是传入的bean实例本身、或者该实例是个FactoryBean实例时创建bean。
+	 * @param beanInstance the shared bean instance  // 注：单例bean
+	 * @param name the name that may include factory dereference prefix // 注：可能包含有工厂bean前缀的名称
+	 * @param beanName the canonical bean name	// 注：去除了前缀、处理了别名后的名称
+	 * @param mbd the merged bean definition	// 合并后的bean定义
 	 * @return the object to expose for the bean
+	 * 参考：https://blog.csdn.net/dhaiuda/article/details/83621970
 	 */
 	protected Object getObjectForBeanInstance(
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
+		// 注：
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
 			if (beanInstance instanceof NullBean) {
 				return beanInstance;

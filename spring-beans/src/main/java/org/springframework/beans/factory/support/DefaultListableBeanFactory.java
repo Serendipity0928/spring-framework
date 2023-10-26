@@ -930,12 +930,16 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				// 注：根据合并后的bean定义，过滤非抽象、非单例、非懒加载的bean进行初始化
 				if (isFactoryBean(beanName)) {
-					// TODO: 2023/10/25 继续阅读
-					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);	// 注：默认情况下初始化FactoryBean
 					if (bean instanceof FactoryBean) {
+						// 注：参考：https://blog.csdn.net/u012702547/article/details/132599976【FactoryBean 和它的兄弟SmartFactoryBean！】
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
+						/**
+						 * 注：isEagerInit是用于判断当前FactoryBean是否需要提前初始化内部实际bean。默认情况下仅初始化FactoryBean
+						 */
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
+							// 注：这里判断是否存在安全管理器
 							isEagerInit = AccessController.doPrivileged(
 									(PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
 									getAccessControlContext());
@@ -945,11 +949,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							// 注：如果要提前初始化内部Bean..
 							getBean(beanName);
 						}
 					}
 				}
 				else {
+					// 注：非FactoryBean，直接初始化即可；【重点分析getBean的初始化逻辑】
 					getBean(beanName);
 				}
 			}
