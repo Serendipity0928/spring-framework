@@ -259,12 +259,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
 
-		// 此处传入的name可能是别名，也有可能是工厂bean的name，因此需要先进行转换
+		// 注：此处传入的name可能是别名，也有可能是工厂bean的name，因此需要先进行转换
 		String beanName = transformedBeanName(name);
 		Object bean;
 
-		// 尝试去缓存中获取对象
 		// Eagerly check singleton cache for manually registered singletons.
+		// 注：尝试去缓存中获取对象
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -276,6 +276,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			// 注：从已有的单例bean实例中获取name所指向的目标bean对象【如果当前单例bean是工厂bean，内部会生成目标bean】
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -1964,15 +1965,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
-		// 注：
+		// 注：判断当前要获得的name是否带有FactoryBean的前缀
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
 			if (beanInstance instanceof NullBean) {
 				return beanInstance;
 			}
 			if (!(beanInstance instanceof FactoryBean)) {
+				// 注：带有&前缀的必须是FactoryBean，否则排除异常
 				throw new BeanIsNotAFactoryException(beanName, beanInstance.getClass());
 			}
-			if (mbd != null) {
+			if (mbd != null) {	// 注：当前是工厂bean，如果传入了合并Bean定义的话，就需要在这里修改factoryBean标识；
 				mbd.isFactoryBean = true;
 			}
 			return beanInstance;
@@ -1981,25 +1983,35 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
+		/**
+		 * 注：如果name就是要返回FactoryBean，那么通过上面一块逻辑，经过校验后直接返回或抛出异常。
+		 * 如果name并非是要返回FactoryBean，并且bean实例并非FactoryBean，那么就是普通bean，也是下面直接返回
+		 */
 		if (!(beanInstance instanceof FactoryBean)) {
 			return beanInstance;
 		}
 
+		// 注：下面就是name是要返回正常bean，但是bean实例确实一个工厂类，下面需要从工厂类中创建出目标的bean实例并返回。
 		Object object = null;
 		if (mbd != null) {
+			// 注：当前是工厂bean，如果传入了合并Bean定义的话，就需要在这里修改factoryBean标识；
 			mbd.isFactoryBean = true;
 		}
 		else {
+			// 注：未传入合并bean定义，既然FactoryBean实例都已经存在，那这里就可以通过缓存来尝试获取其生产的实例bean
 			object = getCachedObjectForFactoryBean(beanName);
 		}
 		if (object == null) {
+			// 注：缓存中没有或传入了合并bean定义，需要重新根据工厂Bean生成新的bean实例
 			// Return bean instance from factory.
 			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
 			// Caches object obtained from FactoryBean if it is a singleton.
 			if (mbd == null && containsBeanDefinition(beanName)) {
+				// 注：获取当前工厂bean的合并bean定义
 				mbd = getMergedLocalBeanDefinition(beanName);
 			}
-			boolean synthetic = (mbd != null && mbd.isSynthetic());
+			boolean synthetic = (mbd != null && mbd.isSynthetic());		// 注：判断当前bean定义是否是动态生成的（动态代理）
+			// 注：根据工厂类、目标bean名称、是否动态生成工厂信息来获取目标bean实例
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;
