@@ -183,7 +183,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/** Names of beans that have already been created at least once. */
 	private final Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
-	/** Names of beans that are currently in creation. */
+	/** Names of beans that are currently in creation.
+	 * 注：用于缓存当前线程内正在创建bean的名称
+	 * */
 	private final ThreadLocal<Object> prototypesCurrentlyInCreation =
 			new NamedThreadLocal<>("Prototype beans currently in creation");
 
@@ -245,7 +247,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * 注：返回指定bean的实例(可能是单例或者原型)
 	 * @param name the name of the bean to retrieve // 注：要检索的bean名称
-	 * @param requiredType the required type of the bean to retrieve  // 注：要检索bena实例的类型
+	 * @param requiredType the required type of the bean to retrieve  // 注：要检索bean实例的类型
 	 * @param args arguments to use when creating a bean instance using explicit arguments
 	 * (only applied when creating a new instance as opposed to retrieving an existing one)
 	 * 注：当创建一个bean时通过该参数指定构造参数值。（仅仅当需要创建一个新实例时传入）
@@ -283,7 +285,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
+			/**
+			 * 注：如果我们已经正在创建了这个bean实例，有可能处于循环引用内，就需要抛出异常。
+			 * 【疑问？】
+			 */
 			if (isPrototypeCurrentlyInCreation(beanName)) {
+				// 注：避免当前原型bean正在创建当中
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
@@ -291,29 +298,45 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
+				// 注：如果当前存在父bean工厂，并且当前bean工厂内不包括指定bean名称的bean定义，那这里就需要通过父bean工厂来创建返回。
+				// 注：现将指定name处理下工厂bean前缀、别名等；【如果带有前缀，则仅保留一个前缀】
 				String nameToLookup = originalBeanName(name);
+				/**
+				 * 注：下面就是调用父bean工厂的getBean等方法来返回bean实例。
+				 * 需要注意的是，本方法可能存在4个参数，因此需要根据父bean工厂类型以及参数值来决定调用那个getBean方法。
+				 */
 				if (parentBeanFactory instanceof AbstractBeanFactory) {
+					// 注：如果父bean工厂是AbstractBeanFactory，那就调用doGetBean方法，传入所有参数。
 					return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
 							nameToLookup, requiredType, args, typeCheckOnly);
 				}
 				else if (args != null) {
 					// Delegation to parent with explicit args.
+					// 注：存在构造参数，则调用这个重载方法
 					return (T) parentBeanFactory.getBean(nameToLookup, args);
 				}
 				else if (requiredType != null) {
 					// No args -> delegate to standard getBean method.
+					// 注：没有构造参数，则调用这个重载方法
 					return parentBeanFactory.getBean(nameToLookup, requiredType);
 				}
 				else {
+					// 注：仅有bean名称，则调用这个重载方法
 					return (T) parentBeanFactory.getBean(nameToLookup);
 				}
 			}
 
 			if (!typeCheckOnly) {
+				/**
+				 * 注：如果不仅仅是类型检查，而是创建bean。
+				 * 需要通过下面的方法将该bean名称添加到已经创建bean列表中，防止后续重复创建。
+				 * 并且，还需要把bean的过时标识设置为true，因为bean定义可能发生改变了
+				 */
 				markBeanAsCreated(beanName);
 			}
 
 			try {
+				// 注：如果typeCheckOnly=false，这里会触发实际合并动作
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
 
@@ -1155,6 +1178,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Return whether the specified prototype bean is currently in creation
 	 * (within the current thread).
+	 * 注：判断当前指定的原型bean名的实例是否正在创建中(当前线程)
 	 * @param beanName the name of the bean
 	 */
 	protected boolean isPrototypeCurrentlyInCreation(String beanName) {
@@ -1888,15 +1912,21 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Mark the specified bean as already created (or about to be created).
 	 * <p>This allows the bean factory to optimize its caching for repeated
 	 * creation of the specified bean.
+	 * 注：标记当前指定的bean已经创建。
+	 * 之所以缓存已经创建中的bean名称，主要是为了优化bean工厂来判断某个bean是否重复创建了。
 	 * @param beanName the name of the bean
 	 */
 	protected void markBeanAsCreated(String beanName) {
+		/**
+		 * 注：通过mergedBeanDefinitions缓存添加同步锁；
+		 * - 合并bean定义仍可能在运行时发生改变，每次创建bean实例时都会合并bean定义，添加到已经创建列表时就设置【过时】标识。
+		 */
 		if (!this.alreadyCreated.contains(beanName)) {
 			synchronized (this.mergedBeanDefinitions) {
 				if (!this.alreadyCreated.contains(beanName)) {
 					// Let the bean definition get re-merged now that we're actually creating
 					// the bean... just in case some of its metadata changed in the meantime.
-					clearMergedBeanDefinition(beanName);
+					clearMergedBeanDefinition(beanName);	// 注：内部设置stale标识
 					this.alreadyCreated.add(beanName);
 				}
 			}
