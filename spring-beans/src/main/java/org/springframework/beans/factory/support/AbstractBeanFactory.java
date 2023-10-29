@@ -338,21 +338,29 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			try {
 				// 注：如果typeCheckOnly=false，这里会触发实际合并动作
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 注：检查合并bean定义-非抽象bean才能创建实例
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				/**
+				 * 注：在当前bean创建之前，需保证其依赖于其他bean的初始化
+				 */
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
+						// 注：判断dep是否依赖于beanName，即是否构成循环依赖
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// 注：将beanNme依赖于dep注册到缓存中，便于后续发现循环依赖以及销毁流程使用
 						registerDependentBean(dep, beanName);
 						try {
+							// 注：触发依赖bean的初始化
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
+							// 注：有可能找不到依赖bean的定义【在当前工厂内，意味着依赖关系只能在同一个工厂内】
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"'" + beanName + "' depends on missing bean '" + dep + "'", ex);
 						}
@@ -360,6 +368,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				// 注：创建bean实例
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
@@ -369,6 +378,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Explicitly remove instance from singleton cache: It might have been put there
 							// eagerly by the creation process, to allow for circular reference resolution.
 							// Also remove any beans that received a temporary reference to the bean.
+							/**
+							 * 创建bean失败后需要显示移除单例bean的缓存。
+							 * 为了解决循环引用问题，在创建的过程中可能已经提前存储了缓存数据，这部分数据需要在销毁过程中清除。
+							 * 同时也会清楚bean工厂内任何引用该bean实例的bean实例相关临时引用缓存。
+							 */
 							destroySingleton(beanName);
 							throw ex;
 						}
@@ -1303,6 +1317,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * <p>The default implementation delegates to {@link #registerCustomEditors}.
 	 * Can be overridden in subclasses.
 	 * @param bw the BeanWrapper to initialize
+	 * 注：参考--> https://blog.csdn.net/qq_30321211/article/details/108350140
 	 */
 	protected void initBeanWrapper(BeanWrapper bw) {
 		bw.setConversionService(getConversionService());
@@ -1543,6 +1558,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Check the given merged bean definition,
 	 * potentially throwing validation exceptions.
+	 * 注：在创建bean的时候检查合并bean定义-可能会抛出bean创建异常(BeanCreationException)
+	 * - 验证当前bean是否为抽象-即不允许实例化
 	 * @param mbd the merged bean definition to check
 	 * @param beanName the name of the bean
 	 * @param args the arguments for bean creation, if any

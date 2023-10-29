@@ -67,7 +67,8 @@ import org.springframework.util.StringUtils;
 /**
  * Delegate for resolving constructors and factory methods.
  * <p>Performs constructor resolution through argument matching.
- *
+ * 注：ConstructorResolver用于解析构造器和工厂方法
+ * - 通过参数匹配来执行解析构造器
  * @author Juergen Hoeller
  * @author Rob Harrop
  * @author Mark Fisher
@@ -78,6 +79,7 @@ import org.springframework.util.StringUtils;
  * @see #autowireConstructor
  * @see #instantiateUsingFactoryMethod
  * @see AbstractAutowireCapableBeanFactory
+ * 注：参数-https://blog.csdn.net/qq_30321211/article/details/108350353
  */
 class ConstructorResolver {
 
@@ -86,6 +88,8 @@ class ConstructorResolver {
 	/**
 	 * Marker for autowired arguments in a cached argument array, to be later replaced
 	 * by a {@linkplain #resolveAutowiredArgument resolved autowired argument}.
+	 * 注：用于标识
+	 * // TODO: 2023/10/29 https://blog.csdn.net/m0_62396648/article/details/125154333
 	 */
 	private static final Object autowiredArgumentMarker = new Object();
 
@@ -100,6 +104,7 @@ class ConstructorResolver {
 
 	/**
 	 * Create a new ConstructorResolver for the given factory and instantiation strategy.
+	 * 为指定的bean工厂和实例化策略来创建一个新的ConstructorResolver实例
 	 * @param beanFactory the BeanFactory to work with
 	 */
 	public ConstructorResolver(AbstractAutowireCapableBeanFactory beanFactory) {
@@ -378,64 +383,100 @@ class ConstructorResolver {
 	 * Instantiate the bean using a named factory method. The method may be static, if the
 	 * bean definition parameter specifies a class, rather than a "factory-bean", or
 	 * an instance variable on a factory object itself configured using Dependency Injection.
+	 * 注：使用指定的工厂方法来创建一个bean实例。
+	 * 如果bean定义参数指定了一个类而不是工厂bean，或者用于依赖注入的自身配置的工厂对象变量，那么这个方法可能是一个静态方法。
 	 * <p>Implementation requires iterating over the static or instance methods with the
 	 * name specified in the RootBeanDefinition (the method may be overloaded) and trying
 	 * to match with the parameters. We don't have the types attached to constructor args,
 	 * so trial and error is the only way to go here. The explicitArgs array may contain
 	 * argument values passed in programmatically via the corresponding getBean method.
+	 * 注：该方法的是实现需要遍历定义在bean定义中的静态方法或者实例方法(方法也可能会被重载），并且试图去根据方法参数进行匹配。
+	 * 因为我们在构造器参数上没有携带类型信息，因此我们只能反复试错来匹配方法。
+	 * 明确的参数值可能会通过响应的getBean方法传入过来。
 	 * @param beanName the name of the bean
 	 * @param mbd the merged bean definition for the bean
 	 * @param explicitArgs argument values passed in programmatically via the getBean
 	 * method, or {@code null} if none (-> use constructor argument values from bean definition)
 	 * @return a BeanWrapper for the new instance
+	 * 注：参考--> https://blog.csdn.net/qq_30321211/article/details/108350353、https://blog.51cto.com/u_15103026/2645274
+	 * https://www.jianshu.com/p/39edfa250e4e
 	 */
 	public BeanWrapper instantiateUsingFactoryMethod(
 			String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
-
+		// 注：新建一个bean的装饰实现对象，也是要返回的对象；
 		BeanWrapperImpl bw = new BeanWrapperImpl();
+		// 注：初始化装饰对象
 		this.beanFactory.initBeanWrapper(bw);
 
+		// 注：如果存在工厂bean对象，就赋值到当前属性中
 		Object factoryBean;
+		// 注：如果存在工厂bean，就缓存其工厂类型
 		Class<?> factoryClass;
+		// 注：标识工厂方法是否为静态？
 		boolean isStatic;
 
+		// 注：通过bean定义获取当前FactoryBean名称
 		String factoryBeanName = mbd.getFactoryBeanName();
 		if (factoryBeanName != null) {
+			// 注：存在factoryBean，则通过该工厂bean的实例方法来获取当前bean实例。
 			if (factoryBeanName.equals(beanName)) {
+				// 注：factoryBean名称与bean的名称不能一致，也即不能引向同一个bean定义【bean的factoryBean名不能是其本身，这个说法更好】
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 						"factory-bean reference points back to the same bean definition");
 			}
+			// 注：如果当前bean的实例需要通过其工厂bean的实例方法获取，那么这里需要先获取工厂bean的初始化！
 			factoryBean = this.beanFactory.getBean(factoryBeanName);
 			if (mbd.isSingleton() && this.beanFactory.containsSingleton(beanName)) {
+				// 注：如果在单例bean创建时，有可能因为触发其他bean的实例化，可能会导致当前bean会被初始化，这类校验并抛出异常
 				throw new ImplicitlyAppearedSingletonException();
 			}
+			// 注：获取工厂bean的类型
 			factoryClass = factoryBean.getClass();
+			// 注：工厂方法为工厂bean的实例方法，这里标注为false
 			isStatic = false;
 		}
 		else {
 			// It's a static factory method on the bean class.
+			// 注：非工厂bean创建实例，那就是bean类型的静态方法创建。
 			if (!mbd.hasBeanClass()) {
+				// 注：创建实例bean要么指定bean类型要么指定工厂bean的引用
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 						"bean definition declares neither a bean class nor a factory-bean reference");
 			}
+			// 注：不存在工厂bean
 			factoryBean = null;
+			// 注：工厂类型就是当前bean的类型
 			factoryClass = mbd.getBeanClass();
-			isStatic = true;
+			isStatic = true;		// 注：标识静态方法
 		}
 
+		// 注：用于创建实例的工厂方法
 		Method factoryMethodToUse = null;
 		ArgumentsHolder argsHolderToUse = null;
+		// 注：用于创建实例、调用工厂方法的参数
 		Object[] argsToUse = null;
 
+		/**
+		 * 注：下面解析用于创建bean，调用实例化方法所需要的参数数组-argsToUse
+		 */
 		if (explicitArgs != null) {
+			// 注：如果在调用getBean方法时传入，那就是用方法调用实参
 			argsToUse = explicitArgs;
 		}
 		else {
+			/**
+			 * 注：如果没有传入，就需要通过bean定义缓存来解析构造器参数了。
+			 * (一般情况下这里的所有相关缓存都是null，缓存在bean定义中实际上是为了优化原型实例，避免遍历搜索匹配工厂方法的过程)
+			 * - resolvedConstructorOrFactoryMethod：缓存了已解析了的构造器方法
+			 * - resolvedConstructorArguments：用于缓存完全解析的构造参数的包可见字段
+			 * - preparedConstructorArguments：用于缓存部分准备好的构造参数的包可见字段
+			 */
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
 				factoryMethodToUse = (Method) mbd.resolvedConstructorOrFactoryMethod;
 				if (factoryMethodToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached factory method...
+					// 注：如果构造器方法、构造器参数已经解析了，那么就可能存在构造器参数缓存
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
 						argsToResolve = mbd.preparedConstructorArguments;
@@ -443,6 +484,7 @@ class ConstructorResolver {
 				}
 			}
 			if (argsToResolve != null) {
+				// 注：如果存在部分就绪的构造器参数，这里需要进一步解析，比如获取依赖或类型转换。
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, factoryMethodToUse, argsToResolve, true);
 			}
 		}
@@ -813,19 +855,25 @@ class ConstructorResolver {
 
 	/**
 	 * Resolve the prepared arguments stored in the given bean definition.
+	 * 注：解析存储在指定bean定义中部分准备好的构造器参数--preparedConstructorArguments
 	 */
 	private Object[] resolvePreparedArguments(String beanName, RootBeanDefinition mbd, BeanWrapper bw,
 			Executable executable, Object[] argsToResolve, boolean fallback) {
 
+		// 注：获取bean工厂内自定义的类型转换器
 		TypeConverter customConverter = this.beanFactory.getCustomTypeConverter();
+		// 注：如果用户没有自定义类型转换器，就默认使用bean包装对象
 		TypeConverter converter = (customConverter != null ? customConverter : bw);
+		// 注：获取占位符解析器
 		BeanDefinitionValueResolver valueResolver =
 				new BeanDefinitionValueResolver(this.beanFactory, beanName, mbd, converter);
+		// 注：获取方法|构造器的参数类型
 		Class<?>[] paramTypes = executable.getParameterTypes();
 
 		Object[] resolvedArgs = new Object[argsToResolve.length];
 		for (int argIndex = 0; argIndex < argsToResolve.length; argIndex++) {
 			Object argValue = argsToResolve[argIndex];
+			// 注：获取指定方法|构造器第index个参数对象-MethodParameter
 			MethodParameter methodParam = MethodParameter.forExecutable(executable, argIndex);
 			if (argValue == autowiredArgumentMarker) {
 				argValue = resolveAutowiredArgument(methodParam, beanName, null, converter, fallback);

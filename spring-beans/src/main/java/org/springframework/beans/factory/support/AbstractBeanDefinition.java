@@ -208,7 +208,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * 注：工厂方法的名称
-	 * 疑问：这个是什么？感觉普通类注册的时候就有？
+	 * - XML 配置的 factory-method 属性或者 @Bean 标注的方法都会解析成 factoryMethodName 属性
 	 */
 	@Nullable
 	private String factoryMethodName;
@@ -920,7 +920,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return whether to allow access to non-public constructors and methods.
-	 * 注：返回是否允许允许方法非公共构造器或方法
+	 * 注：返回是否允许访问非公共构造器或方法
 	 */
 	public boolean isNonPublicAccessAllowed() {
 		return this.nonPublicAccessAllowed;
