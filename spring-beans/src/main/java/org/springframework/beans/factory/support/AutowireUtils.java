@@ -51,6 +51,11 @@ import org.springframework.util.ClassUtils;
  */
 abstract class AutowireUtils {
 
+	/**
+	 * 注：方法排序器
+	 * 1. 权限：公共权限方法排在前面，其他权限排在后面
+	 * 2. 参数个数：参数越多的排在前面，越少的排在后面
+	 */
 	public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) -> {
 		int result = Boolean.compare(Modifier.isPublic(e2.getModifiers()), Modifier.isPublic(e1.getModifiers()));
 		return result != 0 ? result : Integer.compare(e2.getParameterCount(), e1.getParameterCount());
