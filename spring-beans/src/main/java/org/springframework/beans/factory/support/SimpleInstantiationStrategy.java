@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
  */
 public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
+	// 注：当前线程正在调用的工厂方法对象
 	private static final ThreadLocal<Method> currentlyInvokedFactoryMethod = new ThreadLocal<>();
 
 
@@ -138,6 +139,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			@Nullable Object factoryBean, final Method factoryMethod, Object... args) {
 
 		try {
+			// 注：如果工厂方法为非公共方法且不可访问，这里需要设置下可见，以便后续调用
 			if (System.getSecurityManager() != null) {
 				AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
 					ReflectionUtils.makeAccessible(factoryMethod);
@@ -148,16 +150,23 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				ReflectionUtils.makeAccessible(factoryMethod);
 			}
 
+			// 注：先将线程存储的正在创建的原先工厂方法对象拿出来，结束后再防止进去
 			Method priorInvokedFactoryMethod = currentlyInvokedFactoryMethod.get();
 			try {
+				// 注：设置当前线程的正在执行的工厂方法
 				currentlyInvokedFactoryMethod.set(factoryMethod);
+				// 注：执行工厂方法获取bean实例
+				// TODO: 2023/10/30 疑问， factoryBean不是可能为null嘛？
 				Object result = factoryMethod.invoke(factoryBean, args);
 				if (result == null) {
+					// 注：可能返回的bean实例为null，修改为NullBean对象
 					result = new NullBean();
 				}
+				// 返回bean实例
 				return result;
 			}
 			finally {
+				// 注：如果存在之前线程正在执行的工厂方法，还需要再设置回去
 				if (priorInvokedFactoryMethod != null) {
 					currentlyInvokedFactoryMethod.set(priorInvokedFactoryMethod);
 				}
@@ -166,6 +175,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				}
 			}
 		}
+		// 各种异常抛出
 		catch (IllegalArgumentException ex) {
 			throw new BeanInstantiationException(factoryMethod,
 					"Illegal arguments to factory method '" + factoryMethod.getName() + "'; " +

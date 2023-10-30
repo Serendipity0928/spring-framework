@@ -408,6 +408,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @throws BeansException if dependency resolution failed for any other reason
 	 * @since 2.5
 	 * @see DependencyDescriptor
+	 * 参考：https://blog.csdn.net/z69183787/article/details/128343895、
+	 * https://blog.csdn.net/qq_30321211/article/details/108358105
 	 */
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,

@@ -131,7 +131,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	private static final boolean IN_NATIVE_IMAGE = (System.getProperty("org.graalvm.nativeimage.imagecode") != null);
 
 
-	/** Strategy for creating bean instances. */
+	/** Strategy for creating bean instances.
+	 * 注：创建bean实例的实例化策略
+	 * */
 	private InstantiationStrategy instantiationStrategy;
 
 	/** Resolver strategy for method parameter names.
@@ -222,6 +224,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Return the instantiation strategy to use for creating bean instances.
+	 * 注：返回创建bean实例的实例化策略，默认为CglibSubclassingInstantiationStrategy
 	 */
 	protected InstantiationStrategy getInstantiationStrategy() {
 		return this.instantiationStrategy;
