@@ -156,12 +156,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/**
 	 * Dependency types to ignore on dependency check and autowire, as Set of
 	 * Class objects: for example, String. Default is none.
+	 * 注：用于依赖检查以及自动装配中需要忽略的依赖类型。
+	 * 这是一个类型集合，如String.Class。默认集合为空。
 	 */
 	private final Set<Class<?>> ignoredDependencyTypes = new HashSet<>();
 
 	/**
 	 * Dependency interfaces to ignore on dependency check and autowire, as Set of
 	 * Class objects. By default, only the BeanFactory interface is ignored.
+	 * 注：用于依赖检查以及自动装配中需要忽略的依赖类型。
+	 * 这是一个类型集合。默认情况下仅有BeanFactory接口是需要忽略的。
 	 */
 	private final Set<Class<?>> ignoredDependencyInterfaces = new HashSet<>();
 
@@ -1599,27 +1603,35 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
 		/**
-		 * 注：
+		 * 注：在属性填充之前，提供InstantiationAwareBeanPostProcessor后置处理器时机去修改bean定义的一些数据。
+		 * 这个机制可以用于支持属性注入样式的扩展。
 		 */
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+			// 注：如果bean定义非动态生成的，且bean工厂中具有实例化后置处理器
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
 				if (!bp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+					// 注：如果当前实例化后置处理器处理后返回false，阻止后续bean属性的注入以及后续处理器的处理过程。
 					return;
 				}
 			}
 		}
 
+		// 注：从bean定义中获取配置的属性值
 		PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
 
+		// 注：从bean定义中获取自动注入模式
 		int resolvedAutowireMode = mbd.getResolvedAutowireMode();
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
+			// 注：如果是按照名称或者类型进行自动装配，就根据将配置的属性值pvs解析后存储在新属性值对象上newPvs
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
 			if (resolvedAutowireMode == AUTOWIRE_BY_NAME) {
+				// 注：按照名称进行自动装配
 				autowireByName(beanName, mbd, bw, newPvs);
 			}
 			// Add property values based on autowire by type if applicable.
 			if (resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
+				// 注：按照类型进行自动装配
 				autowireByType(beanName, mbd, bw, newPvs);
 			}
 			pvs = newPvs;
@@ -1662,6 +1674,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/**
 	 * Fill in any missing property values with references to
 	 * other beans in this factory if autowire is set to "byName".
+	 * 注：如果当前bean的装配模式为按照bean名称装配，
+	 * 这里会获取当前bean工厂内的相应名称的bean来填充任何确实的属性值。
 	 * @param beanName the name of the bean we're wiring up.
 	 * Useful for debugging messages; not used functionally.
 	 * @param mbd bean definition to update through autowiring
@@ -1671,11 +1685,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void autowireByName(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
 
+		/**
+		 * 注：根据bean的类型以及bean定义中存储的属性值，来获取需要注入的属性名称数组【属性值缺失，需要自动装配】。
+		 * - 这里的属性具有一定条件的限制，比如不是简单属性类型，比如基础类型、枚举、Number等。
+		 */
 		String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
+		// 注：遍历这些需要自动装配的属性值
 		for (String propertyName : propertyNames) {
+			// 注：根据名称来判断当前bean工厂中是否包含该属性名的bean
 			if (containsBean(propertyName)) {
+				// 注：如果存在该bean，就调用getBean获取名称为propertyName的实例bean
 				Object bean = getBean(propertyName);
+				// 注：将当前属性名以及其对应的属性值(bean实例)设置到属性值对象中
 				pvs.add(propertyName, bean);
+				// 注：向bean工厂注册这种依赖关系，beanName依赖于propertyName
 				registerDependentBean(propertyName, beanName);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Added autowiring by name from bean name '" + beanName +
@@ -1697,10 +1720,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * of the property type in the bean factory. This makes bean factories simple to
 	 * configure for small namespaces, but doesn't work as well as standard Spring
 	 * behavior for bigger applications.
+	 * 注：根据类型进行装配逻辑的抽象方法(哪里抽象？)
+	 *
 	 * @param beanName the name of the bean to autowire by type
 	 * @param mbd the merged bean definition to update through autowiring
 	 * @param bw the BeanWrapper from which we can obtain information about the bean
 	 * @param pvs the PropertyValues to register wired objects with
+	 * 注：参考--> https://blog.csdn.net/GDUT_Trim/article/details/120935879
 	 */
 	protected void autowireByType(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
@@ -1747,21 +1773,34 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * Return an array of non-simple bean properties that are unsatisfied.
 	 * These are probably unsatisfied references to other beans in the
 	 * factory. Does not include simple properties like primitives or Strings.
+	 * 注：返回bean的非简属性数组。这可能是其他bean实例的不完全引用。
+	 * 返回的数组中不包括基本的属性，比如基本类型或者字符串类型。
 	 * @param mbd the merged bean definition the bean was created with
 	 * @param bw the BeanWrapper the bean was created with
 	 * @return an array of bean property names
 	 * @see org.springframework.beans.BeanUtils#isSimpleProperty
 	 */
 	protected String[] unsatisfiedNonSimpleProperties(AbstractBeanDefinition mbd, BeanWrapper bw) {
+		// 注：创建一个treeSet进行去重
 		Set<String> result = new TreeSet<>();
+		// 注：获取bean定义中配置的属性
 		PropertyValues pvs = mbd.getPropertyValues();
+		// 注：bean类型中属性描述数组
 		PropertyDescriptor[] pds = bw.getPropertyDescriptors();
 		for (PropertyDescriptor pd : pds) {
 			if (pd.getWriteMethod() != null && !isExcludedFromDependencyCheck(pd) && !pvs.contains(pd.getName()) &&
 					!BeanUtils.isSimpleProperty(pd.getPropertyType())) {
+				/**
+				 * 遍历bean类型的所有属性，筛选出满足一下条件的属性作为非简属性返回：
+				 * 1. 属性存在对应的写方法【后续研究下PropertyDescriptor】
+				 * 2. 当前属性需要依赖检查
+				 * 3. bean定义中存储属性值中不存在当前属性
+				 * 4. 当前属性并非是简单类型（数组类型以组件元素类型并非是简单类型）
+				 */
 				result.add(pd.getName());
 			}
 		}
+		// 注：将属性名称以字符串数组返回
 		return StringUtils.toStringArray(result);
 	}
 
@@ -1807,6 +1846,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * <p>This implementation excludes properties defined by CGLIB and
 	 * properties whose type matches an ignored dependency type or which
 	 * are defined by an ignored dependency interface.
+	 * 注：判断指定的ben属性是否从依赖检查中排除。当前方法的实现排除了以下属性：
+	 * - 由CGLIB动态定义的属性
+	 * - 缓存在ignoredDependencyTypes集合中的类型属性
+	 * - 由ignoredDependencyInterfaces集合的接口定义该属性的setter方法
 	 * @param pd the PropertyDescriptor of the bean property
 	 * @return whether the bean property is excluded
 	 * @see #ignoreDependencyType(Class)
