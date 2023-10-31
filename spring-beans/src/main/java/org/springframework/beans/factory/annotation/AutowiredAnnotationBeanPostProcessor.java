@@ -253,6 +253,14 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 		this.injectionMetadataCache.remove(beanName);
 	}
 
+	/**
+	 * 注：通过后置处理器来决定候选构造器
+	 * @param beanClass the raw class of the bean (never {@code null})
+	 * @param beanName the name of the bean
+	 * @return
+	 * @throws BeanCreationException
+	 * 注：参考--> https://juejin.cn/post/7081553925190467614
+	 */
 	@Override
 	@Nullable
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)

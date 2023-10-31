@@ -39,6 +39,7 @@ public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 
 	/**
 	 * Post-process the given merged bean definition for the specified bean.
+	 * 注：bean实例化之后，会调用当前后置处理器的当前方法修改bean定义
 	 * @param beanDefinition the merged bean definition for the bean
 	 * @param beanType the actual type of the managed bean instance
 	 * @param beanName the name of the bean

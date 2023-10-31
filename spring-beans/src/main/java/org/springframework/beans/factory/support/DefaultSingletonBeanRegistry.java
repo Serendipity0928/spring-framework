@@ -167,15 +167,21 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * if necessary.
 	 * <p>To be called for eager registration of singletons, e.g. to be able to
 	 * resolve circular references.
+	 * 注：将指定的单例工厂添加到三级缓存中。
+	 * - 该方法会在早期单例注册时调用，主要是为了能够解决循环引用。
 	 * @param beanName the name of the bean
 	 * @param singletonFactory the factory for the singleton object
 	 */
 	protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(singletonFactory, "Singleton factory must not be null");
 		synchronized (this.singletonObjects) {
+			// 注：判断一级缓存中没有当前bean定义
 			if (!this.singletonObjects.containsKey(beanName)) {
+				// 注：将获取当前bean的对象工厂添加到三级缓存中
 				this.singletonFactories.put(beanName, singletonFactory);
+				// 注：移除可能存在的二级缓存
 				this.earlySingletonObjects.remove(beanName);
+				// 注：将该bean的名称缓存到已注册单例bean缓存中
 				this.registeredSingletons.add(beanName);
 			}
 		}

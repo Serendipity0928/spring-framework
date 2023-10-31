@@ -40,6 +40,7 @@ import org.springframework.util.StringUtils;
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 1.1
+ * 注：参考：https://blog.csdn.net/wang0907/article/details/116095882
  */
 public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
@@ -61,13 +62,20 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		/**
+		 * 注：如果不存在覆盖方法就不要使用CGLIB覆盖类的实例。
+		 * 如果存在覆盖方法，会使用CGLIB生成类的实例。
+		 */
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
+				// 注：bean定义中缓存的无参构造器
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
+					// 注：如果bean中无缓存无参构造器，则通过bean的类型反射获取无参构造器。
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
+						// 注：接口类型无法获取无参构造器
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
@@ -76,8 +84,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							// 注：获取bean类型的无参构造器
 							constructorToUse = clazz.getDeclaredConstructor();
 						}
+						// 注：将无参构造器缓存在bean定义中
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
@@ -85,10 +95,12 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					}
 				}
 			}
+			// 注：通过构造器反射实例化一个对象
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// 注：使用CGLIB动态生成
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}
@@ -156,7 +168,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				// 注：设置当前线程的正在执行的工厂方法
 				currentlyInvokedFactoryMethod.set(factoryMethod);
 				// 注：执行工厂方法获取bean实例
-				// TODO: 2023/10/30 疑问， factoryBean不是可能为null嘛？
+				// 注：当factoryMethod为静态方法是，factoryBean可以为null
 				Object result = factoryMethod.invoke(factoryBean, args);
 				if (result == null) {
 					// 注：可能返回的bean实例为null，修改为NullBean对象
