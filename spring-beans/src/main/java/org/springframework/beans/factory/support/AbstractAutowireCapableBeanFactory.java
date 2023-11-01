@@ -1721,29 +1721,40 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * configure for small namespaces, but doesn't work as well as standard Spring
 	 * behavior for bigger applications.
 	 * 注：根据类型进行装配逻辑的抽象方法(哪里抽象？)
-	 *
+	 * 这类似于PicoContainer(非常轻量级的IOC容器)默认值，其中在bean工厂中必须存在一个当前属性类型的bean。
+	 * 这使得bean工厂很容易配置小型命名空间，但对于大型应用，这种效果不如标准spring行为好。
 	 * @param beanName the name of the bean to autowire by type
 	 * @param mbd the merged bean definition to update through autowiring
 	 * @param bw the BeanWrapper from which we can obtain information about the bean
 	 * @param pvs the PropertyValues to register wired objects with
-	 * 注：参考--> https://blog.csdn.net/GDUT_Trim/article/details/120935879
+	 * 注：参考--> https://blog.csdn.net/GDUT_Trim/article/details/120935879、https://blog.csdn.net/qq_30321211/article/details/108357238
 	 */
 	protected void autowireByType(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
 
+		// 注：获取bean工厂自定义的类型转换器
 		TypeConverter converter = getCustomTypeConverter();
 		if (converter == null) {
+			// 注：如果不存在自定义类型转换器就是用当前bean的包装器实例
 			converter = bw;
 		}
 
+		// 注：在当前bean中已自动装配的bean名称，后续会根据该集合记录bean之间的依赖关系
 		Set<String> autowiredBeanNames = new LinkedHashSet<>(4);
+		// 注：根据bean的类型以及bean定义中存储的属性值，来获取需要注入的属性名称数组【属性值缺失，需要自动装配】。
 		String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
-		for (String propertyName : propertyNames) {
+		for (String propertyName : propertyNames) {		// 注：遍历所有需要注入的属性
 			try {
+				// 注：根据属性名从bean包装器中获取属性描述对象
 				PropertyDescriptor pd = bw.getPropertyDescriptor(propertyName);
 				// Don't try autowiring by type for type Object: never makes sense,
 				// even if it technically is a unsatisfied, non-simple property.
+				/**
+				 * 注：不要试图自动装配Object类型的属性，没有任何意义。
+				 * 即使该属性为未满足、非简易属性。
+				 */
 				if (Object.class != pd.getPropertyType()) {
+					// 注：获取当前属性的写方法(Setter)的属性(第一个属性)
 					MethodParameter methodParam = BeanUtils.getWriteMethodParameter(pd);
 					// Do not allow eager init for type matching in case of a prioritized post-processor.
 					boolean eager = !(bw.getWrappedInstance() instanceof PriorityOrdered);
