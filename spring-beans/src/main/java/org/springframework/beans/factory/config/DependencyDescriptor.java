@@ -45,38 +45,55 @@ import org.springframework.util.ObjectUtils;
  * Descriptor for a specific dependency that is about to be injected.
  * Wraps a constructor parameter, a method parameter or a field,
  * allowing unified access to their metadata.
+ * 注：DependencyDescriptor用于描述一个需要被切入的特定依赖。
+ * 该实例包装了一个构造器参数、或一个方法参数、或一个实例域，并且允许对其元数据进行统一访问
  *
  * @author Juergen Hoeller
  * @since 2.5
+ * 注：参考--> https://blog.csdn.net/andy_zhang2007/article/details/88135669
  */
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
 
+	/**
+	 * 注：保存所包装依赖(成员属性或者成员方法的某个参数)所在的声明类，
+	 * 其实该信息在 field/methodParameter 中已经隐含
+	 */
 	private final Class<?> declaringClass;
 
+	// 注：如果所包装依赖是成员方法的某个参数，则这里记录该成员方法的名称。(构造器为null)
 	@Nullable
 	private String methodName;
 
+	// 注：如果所包装的是成员方法的某个参数，则这里记录该参数的类型
 	@Nullable
 	private Class<?>[] parameterTypes;
 
+	// 注：如果所包装的是成员方法的某个参数，则这里记录该参数在该函数参数列表中的索引
 	private int parameterIndex;
 
+	// 注：如果所包装的是成员属性，则这里记录该成员属性的名称
 	@Nullable
 	private String fieldName;
 
+	// 注：标识所包装依赖是否必要依赖？？？？
 	private final boolean required;
 
+	// 注：标识所包装依赖是否需要饥饿加载
 	private final boolean eager;
 
+	// 注：标识所包装依赖的嵌套级别
 	private int nestingLevel = 1;
 
+	// 注：标识所包装依赖的包含者类，通常和声明类是同一个
 	@Nullable
 	private Class<?> containingClass;
 
+	// 注：所包装依赖 ResolvableType 的缓存
 	@Nullable
 	private transient volatile ResolvableType resolvableType;
 
+	// 注：所包装依赖 TypeDescriptor 的缓存
 	@Nullable
 	private transient volatile TypeDescriptor typeDescriptor;
 
@@ -84,6 +101,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	/**
 	 * Create a new descriptor for a method or constructor parameter.
 	 * Considers the dependency as 'eager'.
+	 * 注：构造函数，包装成员方法参数依赖，依赖解析会使用 饥饿模式
 	 * @param methodParameter the MethodParameter to wrap
 	 * @param required whether the dependency is required
 	 */
@@ -93,6 +111,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 	/**
 	 * Create a new descriptor for a method or constructor parameter.
+	 * 注：构造函数，包装成员方法参数依赖
 	 * @param methodParameter the MethodParameter to wrap
 	 * @param required whether the dependency is required
 	 * @param eager whether this dependency is 'eager' in the sense of
@@ -103,6 +122,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 		this.declaringClass = methodParameter.getDeclaringClass();
 		if (methodParameter.getMethod() != null) {
+			// 注：构造器没有名字，就是null
 			this.methodName = methodParameter.getMethod().getName();
 		}
 		this.parameterTypes = methodParameter.getExecutable().getParameterTypes();
@@ -115,6 +135,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	/**
 	 * Create a new descriptor for a field.
 	 * Considers the dependency as 'eager'.
+	 * 注：创建一个包装成员属性依赖的依赖描述对象。
 	 * @param field the field to wrap
 	 * @param required whether the dependency is required
 	 */
@@ -124,6 +145,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 	/**
 	 * Create a new descriptor for a field.
+	 * 注：创建一个包装成员属性依赖的依赖描述对象。
 	 * @param field the field to wrap
 	 * @param required whether the dependency is required
 	 * @param eager whether this dependency is 'eager' in the sense of
@@ -140,6 +162,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 	/**
 	 * Copy constructor.
+	 * 注：复制一个依赖描述对象
 	 * @param original the original descriptor to create a copy from
 	 */
 	public DependencyDescriptor(DependencyDescriptor original) {

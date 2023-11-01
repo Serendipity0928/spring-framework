@@ -1247,6 +1247,9 @@ class ConstructorResolver {
 		}
 	}
 
+	/**
+	 * 注：返回当前线程上下文中的切入点，并将指定的切入点设置到线程上下文中
+	 */
 	static InjectionPoint setCurrentInjectionPoint(@Nullable InjectionPoint injectionPoint) {
 		InjectionPoint old = currentInjectionPoint.get();
 		if (injectionPoint != null) {

@@ -403,7 +403,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @param autowiredBeanNames a Set that all names of autowired beans (used for
 	 * resolving the given dependency) are supposed to be added to		// 注：用于将所有解析指定依赖的已装配的bean存储在该集合中
 	 * @param typeConverter the TypeConverter to use for populating arrays and collections  // 注：用于对填充的数组、集合进行类型转换
-	 * @return the resolved object, or {@code null} if none found		// 注：
+	 * @return the resolved object, or {@code null} if none found
 	 * @throws NoSuchBeanDefinitionException if no matching bean was found
 	 * @throws NoUniqueBeanDefinitionException if more than one matching bean was found
 	 * @throws BeansException if dependency resolution failed for any other reason

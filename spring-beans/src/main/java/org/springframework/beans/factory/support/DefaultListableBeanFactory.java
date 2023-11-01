@@ -154,7 +154,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	private Comparator<Object> dependencyComparator;
 
-	/** Resolver to use for checking if a bean definition is an autowire candidate. */
+	/** Resolver to use for checking if a bean definition is an autowire candidate.
+	 * 注：用于检查是否一个bean定义为一个自动装配的候选bean的解析器
+	 * */
 	private AutowireCandidateResolver autowireCandidateResolver = SimpleAutowireCandidateResolver.INSTANCE;
 
 	/** Map from dependency type to corresponding autowired value. */
@@ -1293,21 +1295,29 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 	}
 
+	// 注：解析出与descriptor所包装的对象匹配的候选Bean对象
+	// TODO：https://blog.csdn.net/qq_30321211/article/details/108358105
+	// 暂停原因：找不到例子了...
 	@Nullable
 	public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
 
+		// 注：将当前线程的切入点对象暂存起来，并将本次解析的依赖描述对象作为切入点设置到当前线程中去，解析后会再将原先的切入点再设置进去
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
+			// 注：尝试使用descriptor的快捷方法得到候选Bean对象（一般返回null）
 			Object shortcut = descriptor.resolveShortcut(this);
 			if (shortcut != null) {
 				return shortcut;
 			}
 
+			// 注：获取descriptor的依赖类型
 			Class<?> type = descriptor.getDependencyType();
+			// 注：使用此BeanFactory的自动装配候选解析器获取descriptor的默认值
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 			if (value != null) {
 				if (value instanceof String) {
+					// 注：如果value是String类型
 					String strVal = resolveEmbeddedValue((String) value);
 					BeanDefinition bd = (beanName != null && containsBean(beanName) ?
 							getMergedBeanDefinition(beanName) : null);
@@ -1382,6 +1392,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			return result;
 		}
 		finally {
+			// 注：将原先的切入点还设置回线程上下文中
 			ConstructorResolver.setCurrentInjectionPoint(previousInjectionPoint);
 		}
 	}
@@ -1811,21 +1822,39 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 */
 	private Optional<?> createOptionalDependency(
 			DependencyDescriptor descriptor, @Nullable String beanName, final Object... args) {
-		// 注：包装依赖描述性信息，解析依赖类型时会将嵌套层次加1
-		// 比如原先要解析的类型为Option<T>，嵌套层次加1后会解析泛型类型的实际类型
+		/**
+		 * 注：包装依赖描述性信息，解析依赖类型时会将嵌套层次加1
+		 * 比如原先要解析的类型为Option<T>，嵌套层次加1后会解析泛型类型的实际类型\
+		 * 新建一个NestedDependencyDescriptor实例,该实例不要求一定要得到候选Bean对象，且可根据arg构建候选Bean对象(当Bean是{@link #SCOPE_PROTOTYPE}时)
+		 */
 		DependencyDescriptor descriptorToUse = new NestedDependencyDescriptor(descriptor) {
+			/**
+			 * 注：不要求一定要得到候选Bean对象
+			 */
 			@Override
 			public boolean isRequired() {
 				return false;
 			}
+
+			/**
+			 * 注：将指定的Bean名称解析为给定工厂的Bean实例，作为对此依赖项的匹配算法的候选结果：
+			 * - 重写该方法，使得该方法可以引用args来获取beanName的bean对象
+			 * @param beanName the bean name, as a candidate result for this dependency
+			 * @param requiredType the expected type of the bean (as an assertion)
+			 * @param beanFactory the associated factory
+			 * @return
+			 */
 			@Override
 			public Object resolveCandidate(String beanName, Class<?> requiredType, BeanFactory beanFactory) {
+				// 注：如果args不是空数组，就调用beanFactory.getBean(beanName, args)方法，即引用args来获取beanName的bean对象
+				// 否则 调用父级默认实现；默认实现调用BeanFactory.getBean(beanName).
 				return (!ObjectUtils.isEmpty(args) ? beanFactory.getBean(beanName, args) :
 						super.resolveCandidate(beanName, requiredType, beanFactory));
 			}
 		};
-		// zhu
+		// 注：解析出与descriptor所包装的对象匹配的后续Bean对象
 		Object result = doResolveDependency(descriptorToUse, beanName, null, null);
+		// 注：如果result是Optional的实例,就将其强转为Optional后返回出去；否则将result包装到Optional对象中再返回出去
 		return (result instanceof Optional ? (Optional<?>) result : Optional.ofNullable(result));
 	}
 
