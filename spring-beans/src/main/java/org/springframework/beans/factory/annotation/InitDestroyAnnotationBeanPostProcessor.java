@@ -150,6 +150,9 @@ public class InitDestroyAnnotationBeanPostProcessor
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
+	/**
+	 * 注：@PostConstruct就在这里被调用的，缓存在了this.lifecycleMetadataCache里面，后续看下如何注入的
+	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());

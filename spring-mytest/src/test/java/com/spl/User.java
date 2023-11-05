@@ -1,8 +1,16 @@
 package com.spl;
 
+import javax.annotation.PostConstruct;
+
 public class User {
 	private String id;
 	private String userName;
+
+	@PostConstruct
+	public void initPostConstruct() {
+		System.out.println("初始化User：");
+		System.out.println("userName：" + userName);
+	}
 
 	public User() {
 	}

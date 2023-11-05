@@ -11,5 +11,4 @@ public class TestMain {
 		MathCalculator mathCalculator = (MathCalculator) acx.getBean("mathCalculator");
 		mathCalculator.div(2, 1);
 	}
-
 }

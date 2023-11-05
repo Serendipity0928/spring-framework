@@ -429,6 +429,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param bean the bean instance
 	 */
 	public void registerDisposableBean(String beanName, DisposableBean bean) {
+		// 注册用于销毁的bean到disposableBeans缓存
 		synchronized (this.disposableBeans) {
 			this.disposableBeans.put(beanName, bean);
 		}

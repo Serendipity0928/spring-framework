@@ -155,7 +155,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private TypeConverter typeConverter;
 
-	/** String resolvers to apply e.g. to annotation attribute values. */
+	/** String resolvers to apply e.g. to annotation attribute values.
+	 * 注：用于解析给定字符串值，比如解析占位符
+	 * */
 	private final List<StringValueResolver> embeddedValueResolvers = new CopyOnWriteArrayList<>();
 
 	/** BeanPostProcessors to apply.
@@ -960,6 +962,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return !this.embeddedValueResolvers.isEmpty();
 	}
 
+	// 注：解析给定的嵌套值
 	@Override
 	@Nullable
 	public String resolveEmbeddedValue(@Nullable String value) {
@@ -968,8 +971,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 		String result = value;
 		for (StringValueResolver resolver : this.embeddedValueResolvers) {
+			// 注：遍历字符串解析器
 			result = resolver.resolveStringValue(result);
 			if (result == null) {
+				// 注：解析结果可能会返回null(一般是value本身就是null)，直接返回。
 				return null;
 			}
 		}
@@ -2101,19 +2106,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see RootBeanDefinition#getDependsOn
 	 * @see #registerDisposableBean
 	 * @see #registerDependentBean
+	 * 注：参考--> https://blog.csdn.net/Weixiaohuai/article/details/122093896
 	 */
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
 		AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+		// 注：如果bean的作用域不是prototype，且bean需要在关闭时进行销毁
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
+			// 注：如果bean的作用域是singleton，则会注册用于销毁的bean到disposableBeans缓存，执行给定bean的所有销毁工作
 			if (mbd.isSingleton()) {
 				// Register a DisposableBean implementation that performs all destruction
 				// work for the given bean: DestructionAwareBeanPostProcessors,
 				// DisposableBean interface, custom destroy method.
+
 				registerDisposableBean(beanName, new DisposableBeanAdapter(
 						bean, beanName, mbd, getBeanPostProcessorCache().destructionAware, acc));
 			}
 			else {
 				// A bean with a custom scope...
+				// 注：如果bean的作用域不是prototype、也不是singleton，而是其他作自定义用域的话，则注册一个回调，以在销毁作用域内的指定对象时执行
 				Scope scope = this.scopes.get(mbd.getScope());
 				if (scope == null) {
 					throw new IllegalStateException("No Scope registered for scope name '" + mbd.getScope() + "'");

@@ -684,6 +684,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
+				// 注：12. 调用生命周期回调方法并，发布容器已刷新的事件
 				finishRefresh();
 			}
 
@@ -694,18 +695,24 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				}
 
 				// Destroy already created singletons to avoid dangling resources.
+				// 注：销毁已经创建的单例bean实例
 				destroyBeans();
 
 				// Reset 'active' flag.
+				// 注：重置当前bean工厂的激活状态为false
 				cancelRefresh(ex);
 
 				// Propagate exception to caller.
+				// 注：将异常抛出给调用者
 				throw ex;
 			}
 
 			finally {
 				// Reset common introspection caches in Spring's core, since we
 				// might not ever need metadata for singleton beans anymore...
+				/**
+				 * 注：重置Spring核心中的公共内省缓存，因为我们可能不再需要单例bean的元数据
+				 */
 				resetCommonCaches();
 			}
 		}
@@ -1111,22 +1118,28 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Finish the refresh of this context, invoking the LifecycleProcessor's
 	 * onRefresh() method and publishing the
 	 * {@link org.springframework.context.event.ContextRefreshedEvent}.
+	 * 注：完成当前上下文的刷新，调用生命周期处理器(LifecycleProcessor)的onRefresh方法并且发布容器已刷新事件。
 	 */
 	protected void finishRefresh() {
 		// Clear context-level resource caches (such as ASM metadata from scanning).
+		// 注：清理容器级别的资源缓存
 		clearResourceCaches();
 
 		// Initialize lifecycle processor for this context.
+		// 注：为上下文初始化生命周期处理器
 		initLifecycleProcessor();
 
 		// Propagate refresh to lifecycle processor first.
+		// 注：刷新所有实现了 Lifecycle 接口的 Bean
 		getLifecycleProcessor().onRefresh();
 
 		// Publish the final event.
+		// 注：发布 ContextRefreshEvent 事件告知容器已完成刷新
 		publishEvent(new ContextRefreshedEvent(this));
 
 		// Participate in LiveBeansView MBean, if active.
 		if (!IN_NATIVE_IMAGE) {
+			// 注：如果配置了MBeanServer，就完成在MBeanServer上的注册
 			LiveBeansView.registerApplicationContext(this);
 		}
 	}
@@ -1151,9 +1164,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see CachedIntrospectionResults#clearClassLoader(ClassLoader)
 	 */
 	protected void resetCommonCaches() {
+		// 注：清空反射缓存
 		ReflectionUtils.clearCache();
+		// 注：清空注解缓存
 		AnnotationUtils.clearCache();
+		// 注：清空并发缓存
 		ResolvableType.clearCache();
+		// 注：清空类加载器
 		CachedIntrospectionResults.clearClassLoader(getClassLoader());
 	}
 

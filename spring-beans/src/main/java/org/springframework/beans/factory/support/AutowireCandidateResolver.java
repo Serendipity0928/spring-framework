@@ -75,6 +75,7 @@ public interface AutowireCandidateResolver {
 	/**
 	 * Determine whether a default value is suggested for the given dependency.
 	 * <p>The default implementation simply returns {@code null}.
+	 * 注：返回指定依赖的默认推荐值；默认实现为null
 	 * @param descriptor the descriptor for the target method parameter or field
 	 * @return the value suggested (typically an expression String),
 	 * or {@code null} if none found

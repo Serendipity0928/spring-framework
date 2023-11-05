@@ -79,6 +79,7 @@ public interface BeanPostProcessor {
 	 * @param beanName the name of the bean
 	 * @return the bean instance to use, either the original or a wrapped one;
 	 * if {@code null}, no subsequent BeanPostProcessors will be invoked
+	 * // 注：返回null，就不会再调用后续的bean后置处理器方法了
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 */

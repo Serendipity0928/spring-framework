@@ -964,7 +964,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
-		// 注：触发SmartInitializingSingleton类型单例bean的回调方法。
+		// 注：触发SmartInitializingSingleton类型单例bean的afterSingletonsInstantiated回调方法。
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
@@ -1305,7 +1305,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 注：将当前线程的切入点对象暂存起来，并将本次解析的依赖描述对象作为切入点设置到当前线程中去，解析后会再将原先的切入点再设置进去
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
-			// 注：尝试使用descriptor的快捷方法得到候选Bean对象（一般返回null）
+			/**
+			 * 注：尝试使用descriptor的快捷方法得到候选Bean对象（一般返回null）
+			 * - autowireByType的依赖描述符类型为AutowireByTypeDependencyDescriptor
+			 * - 仅ShortcutDependencyDescriptor子类实现了该快捷方法，用于AutowiredAnnotationBeanPostProcessor内缓存自动装配的字段依赖bean。
+			 */
 			Object shortcut = descriptor.resolveShortcut(this);
 			if (shortcut != null) {
 				return shortcut;
@@ -1313,33 +1317,50 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 			// 注：获取descriptor的依赖类型
 			Class<?> type = descriptor.getDependencyType();
-			// 注：使用此BeanFactory的自动装配候选解析器获取descriptor的默认值
+			/**
+			 * 注：使用此BeanFactory的自动装配候选解析器获取descriptor的默认值
+			 * - 默认解析器是SimpleAutowireCandidateResolver
+			 */
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 			if (value != null) {
 				if (value instanceof String) {
-					// 注：如果value是String类型
+					// 注：如果value是String类型，需要解析字符串中的占位符等信息
 					String strVal = resolveEmbeddedValue((String) value);
+					// 注：获取当前beanName的bean定义
 					BeanDefinition bd = (beanName != null && containsBean(beanName) ?
 							getMergedBeanDefinition(beanName) : null);
+					// 注：评估bd中包含的value,如果strVal是可解析表达式，会对其进行解析
 					value = evaluateBeanDefinitionString(strVal, bd);
 				}
+				// 注：获取类型转换器。如果没有传入typeConverter, 则引用工厂的类型转换器
 				TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
 				try {
+					// 注：将value对象转换为type的实例对象
 					return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());
 				}
 				catch (UnsupportedOperationException ex) {
 					// A custom TypeConverter which does not support TypeDescriptor resolution...
+					/**
+					 * 注：自定义TypeConverter，不支持依赖类型解析
+					 * ...
+					 */
 					return (descriptor.getField() != null ?
 							converter.convertIfNecessary(value, type, descriptor.getField()) :
 							converter.convertIfNecessary(value, type, descriptor.getMethodParameter()));
 				}
 			}
 
+			/**
+			 * 注：尝试针对descriptor所包装的对象类型是[stream, 数组, Collection类型且对象类型是接口, Map]的情况，
+			 * 进行解析与依赖类型匹配的候选Bean对象，并将其封装成相应的依赖类型对象
+			 */
 			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
 			if (multipleBeans != null) {
+				// 注：如果存在以上类型的bean就直接返回
 				return multipleBeans;
 			}
 
+			// 注：查找与type匹配的候选bean对象,构建成Map，key=bean名,val=Bean对象
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (matchingBeans.isEmpty()) {
 				if (isRequired(descriptor)) {
