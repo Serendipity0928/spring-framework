@@ -203,6 +203,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	private boolean lenientConstructorResolution = true;
 
 	// 注：当前bean的工厂bean名称。工厂bean本身是一个特殊的bean，通过工厂bean，可以创建出一个指定类型的bean
+	// <bean>标签的“factory-bean”属性
 	@Nullable
 	private String factoryBeanName;
 
@@ -247,7 +248,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	// 注：bean的角色标识，默认是用户定义的应用bean。其它角色比如：内部基础bean，配置支持bean
 	private int role = BeanDefinition.ROLE_APPLICATION;
 
-	// 注：bean定义的描述信息
+	// 注：通过<description>标签定义的bean定义描述信息
 	@Nullable
 	private String description;
 
@@ -1102,7 +1103,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Specify whether or not the configured init method is the default.
 	 * <p>The default value is {@code false}.
-	 * 注：设置是否默认配置初始化方法，也即强制初始化。
+	 * 注：指定是否配置的初始化方法是否为<beans>上的默认配置。
+	 * 如果是默认配置，该属性配置为false，即不强制。
 	 * @see #setInitMethodName
 	 */
 	public void setEnforceInitMethod(boolean enforceInitMethod) {

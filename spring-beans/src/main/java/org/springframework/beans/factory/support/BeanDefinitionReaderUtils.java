@@ -90,6 +90,7 @@ public abstract class BeanDefinitionReaderUtils {
 	/**
 	 * Generate a bean name for the given bean definition, unique within the
 	 * given bean factory.
+	 * 注：根据指定的bean定义来生成指定bean注册中心(一般是工厂或应用上下文)中唯一的bean名称。
 	 * @param definition the bean definition to generate a bean name for
 	 * @param registry the bean factory that the definition is going to be
 	 * registered with (to check for existing bean names)
@@ -104,32 +105,43 @@ public abstract class BeanDefinitionReaderUtils {
 			BeanDefinition definition, BeanDefinitionRegistry registry, boolean isInnerBean)
 			throws BeanDefinitionStoreException {
 
+		// 注：① 获取<bean>标签上指定的bean类型名称来作为bean的名称
 		String generatedBeanName = definition.getBeanClassName();
 		if (generatedBeanName == null) {
 			if (definition.getParentName() != null) {
+				// 注：② 如果当前<bean>存在"parent"属性，则通过父bean定义名称拼接"$child"字符串作为当前子bean名称
 				generatedBeanName = definition.getParentName() + "$child";
 			}
 			else if (definition.getFactoryBeanName() != null) {
+				// 注：③ 如果当前<bean>存在”factory-bean“属性，则通过该属性名称拼接”$created“作为当前需被创建的bean名称
 				generatedBeanName = definition.getFactoryBeanName() + "$created";
 			}
 		}
 		if (!StringUtils.hasText(generatedBeanName)) {
+			// 注：如果均未指定"id"、"name"、"class”、 “parent”、“factory-bean“属性，则此处无法生成bean名称，抛出异常
 			throw new BeanDefinitionStoreException("Unnamed bean definition specifies neither " +
 					"'class' nor 'parent' nor 'factory-bean' - can't generate bean name");
 		}
 
+		/**
+		 * 注：以上生成的bean名称，未必在指定bean注册工厂中具备唯一性。
+		 * 下面需要给bean名称添加唯一性的后缀，而后返回。
+		 */
 		if (isInnerBean) {
 			// Inner bean: generate identity hashcode suffix.
+			// 注：如果是内部bean，就拼接上"#"以及bean定义的唯一哈希字符串。
 			return generatedBeanName + GENERATED_BEAN_NAME_SEPARATOR + ObjectUtils.getIdentityHexString(definition);
 		}
 
 		// Top-level bean: use plain class name with unique suffix if necessary.
+		// 注：非内部bean，后面拼接上"#"以及数字。（具体数字多少，从0开始逐步递增直到找到唯一的拼接后缀名称为止）
 		return uniqueBeanName(generatedBeanName, registry);
 	}
 
 	/**
 	 * Turn the given bean name into a unique bean name for the given bean factory,
 	 * appending a unique counter as suffix if necessary.
+	 * 注：将给定的bean名称通过添加数字后缀转换为给定的bean注册中心(一般是bean工厂或应用上下文)中唯一的bean名称。
 	 * @param beanName the original bean name
 	 * @param registry the bean factory that the definition is going to be
 	 * registered with (to check for existing bean names)
@@ -141,7 +153,8 @@ public abstract class BeanDefinitionReaderUtils {
 		int counter = -1;
 
 		// Increase counter until the id is unique.
-		String prefix = beanName + GENERATED_BEAN_NAME_SEPARATOR;
+		// 从0开始逐步递增后缀，直到当前bean名称唯一。
+		String prefix = beanName + GENERATED_BEAN_NAME_SEPARATOR;	// 注：中间还有一个'#'
 		while (counter == -1 || registry.containsBeanDefinition(id)) {
 			counter++;
 			id = prefix + counter;
@@ -151,6 +164,7 @@ public abstract class BeanDefinitionReaderUtils {
 
 	/**
 	 * Register the given bean definition with the given bean factory.
+	 * 注：将指定的bean定义注册到指定的bean定义注册中心中(一般是bean工厂或应用上下文)
 	 * @param definitionHolder the bean definition including name and aliases
 	 * @param registry the bean factory to register with
 	 * @throws BeanDefinitionStoreException if registration failed
@@ -160,10 +174,14 @@ public abstract class BeanDefinitionReaderUtils {
 			throws BeanDefinitionStoreException {
 
 		// Register bean definition under primary name.
+		// 注：根据bean定义的唯一名称来进行注册bean定义
 		String beanName = definitionHolder.getBeanName();
+		// TODO: 2023/11/13 注册bean定义
+		// 注：将bean名称以及bean定义注册到bean定义注册中心【重要】，一般由DefaultListableBeanFactory实现。
 		registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
 
 		// Register aliases for bean name, if any.
+		// 注：如果存在bean的别名的话，也注册到bean定义注册中心去
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
 			for (String alias : aliases) {

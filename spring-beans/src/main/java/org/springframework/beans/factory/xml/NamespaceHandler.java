@@ -51,6 +51,7 @@ public interface NamespaceHandler {
 	/**
 	 * Invoked by the {@link DefaultBeanDefinitionDocumentReader} after
 	 * construction but before any custom elements are parsed.
+	 * // 注：创建NamespaceHandler之后，再自定义标签解析之前会调用当前初始化方法
 	 * @see NamespaceHandlerSupport#registerBeanDefinitionParser(String, BeanDefinitionParser)
 	 */
 	void init();
@@ -60,6 +61,7 @@ public interface NamespaceHandler {
 	 * {@link BeanDefinition BeanDefinitions} with the
 	 * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
 	 * that is embedded in the supplied {@link ParserContext}.
+	 * 注：解析指定的标签，并且将解析后的bean定义注册到bean定义注册中心去。(相关上下文数据存储在ParserContext中)
 	 * <p>Implementations should return the primary {@code BeanDefinition}
 	 * that results from the parse phase if they wish to be used nested
 	 * inside (for example) a {@code <property>} tag.
@@ -75,6 +77,7 @@ public interface NamespaceHandler {
 	/**
 	 * Parse the specified {@link Node} and decorate the supplied
 	 * {@link BeanDefinitionHolder}, returning the decorated definition.
+	 * 注：解析指定的节点，并且装饰提供的bean定义后返回。
 	 * <p>The {@link Node} may be either an {@link org.w3c.dom.Attr} or an
 	 * {@link Element}, depending on whether a custom attribute or element
 	 * is being parsed.

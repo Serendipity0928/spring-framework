@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:myname="http://www.lexueba.com/schema/student"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.lexueba.com/schema/student http://www.lexueba.com/schema/student.xsd">
+
+	<bean id="myTestBean" class="com.spl.xml.xmlBeanFactoryTest.bean.MyTestBean" >
+
+	</bean>
+
+	<myname:student name="dsa" id="的" age="12"/>
+
+
+</beans>

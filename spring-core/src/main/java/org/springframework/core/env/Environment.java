@@ -101,6 +101,8 @@ public interface Environment extends PropertyResolver {
 	 * i.e. the method will return {@code true} if the given profile is <em>not</em> active.
 	 * For example, {@code env.acceptsProfiles("p1", "!p2")} will return {@code true} if
 	 * profile 'p1' is active or 'p2' is not active.
+	 * 注：返回指定的多环境配置是否至少存在一个是激活状态，或者在没有显示指定激活环境配置时，判断指定的多环境配置是否存在默认环境配置。
+	 * 如果其中一个环境Profile以'!'为前缀，就意味着判断其是否为非激活状态。
 	 * @throws IllegalArgumentException if called with zero arguments
 	 * or if any profile is {@code null}, empty, or whitespace only
 	 * @see #getActiveProfiles

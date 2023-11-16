@@ -37,8 +37,10 @@ import org.springframework.util.ObjectUtils;
  */
 public class ReplaceOverride extends MethodOverride {
 
+	// 注：MethodReplacer实例的bean名称，用于回调方法
 	private final String methodReplacerBeanName;
 
+	// 注：要拦截方法的入参类型，用于后续匹配使用
 	private List<String> typeIdentifiers = new LinkedList<>();
 
 

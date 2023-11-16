@@ -180,11 +180,13 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	}
 
 
+	// 注：加载这些所有资源对象内所有的bean定义，并返回bean定义的个数
 	@Override
 	public int loadBeanDefinitions(Resource... resources) throws BeanDefinitionStoreException {
 		Assert.notNull(resources, "Resource array must not be null");
 		int count = 0;
 		for (Resource resource : resources) {
+			// 注：加载单个资源对象的bean定义，并返回bean定义个数
 			count += loadBeanDefinitions(resource);
 		}
 		return count;
@@ -199,6 +201,8 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	 * Load bean definitions from the specified resource location.
 	 * <p>The location can also be a location pattern, provided that the
 	 * ResourceLoader of this bean definition reader is a ResourcePatternResolver.
+	 * 注：从指定的资源路径上加载bean定义
+	 * - 指定的路径也可以是路径样式，但这前提bean定义读取器中的资源加载器是ResourcePatternResolver类型，即支持路径匹配解析
 	 * @param location the resource location, to be loaded with the ResourceLoader
 	 * (or ResourcePatternResolver) of this bean definition reader
 	 * @param actualResources a Set to be filled with the actual Resource objects
@@ -211,6 +215,11 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource[])
 	 */
 	public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
+		/**
+		 * 注：获取当前bean定义读取器的资源加载器，资源加载起在初始化读取器的时候初始化。
+		 * 如果通过应用上下文实例初始化读取器时，该资源加载器就是上下文实例本身。
+		 * 如果通过普通bean工厂或bean定义注册中心，默认资源加载器为PathMatchingResourcePatternResolver
+		 */
 		ResourceLoader resourceLoader = getResourceLoader();
 		if (resourceLoader == null) {
 			throw new BeanDefinitionStoreException(
@@ -219,10 +228,14 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
+			// 注：判断当前资源加载器是否支持路径匹配
 			try {
+				// 注：将资源路径解析为资源对象列表(涉及匹配符可能会涉及多个资源文件)
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
+				// 注：加载这些所有资源对象内所有的bean定义，并返回bean定义的个数
 				int count = loadBeanDefinitions(resources);
 				if (actualResources != null) {
+					// 注：将加载bean的资源对象添加到actualResources集合中
 					Collections.addAll(actualResources, resources);
 				}
 				if (logger.isTraceEnabled()) {
@@ -237,9 +250,12 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 		}
 		else {
 			// Can only load single resources by absolute URL.
+			// 注：当前资源加载器不支持路径匹配，也就意味仅能加载单一的资源对象
 			Resource resource = resourceLoader.getResource(location);
+			// 注：加载当前资源对象的bean定义，并返回bean的个数
 			int count = loadBeanDefinitions(resource);
 			if (actualResources != null) {
+				// 注：将加载bean的资源对象添加到actualResources集合中
 				actualResources.add(resource);
 			}
 			if (logger.isTraceEnabled()) {

@@ -182,7 +182,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * */
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<>(256);
 
-	/** Names of beans that have already been created at least once. */
+	/** Names of beans that have already been created at least once.
+	 * 注：当前bean工厂内至少实例化了一次的bean名称
+	 * */
 	private final Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
 	/** Names of beans that are currently in creation.
@@ -1995,6 +1997,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Check whether this factory's bean creation phase already started,
 	 * i.e. whether any bean has been marked as created in the meantime.
+	 * 注：检查是否当前bean工厂已经处于bean的创建阶段了
 	 * @since 4.2.2
 	 * @see #markBeanAsCreated
 	 */

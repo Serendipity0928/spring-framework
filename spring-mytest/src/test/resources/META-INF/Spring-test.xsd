@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+		targetNamespace="http://www.lexueba.com/schema/student"
+		xmlns:tns="http://www.lexueba.com/schema/student"
+		elementFormDefault="qualified">
+
+	<element name="student">
+		<complexType>
+			<attribute name="id" type="string"/>
+			<attribute name="name" type="string"/>
+			<attribute name="age" type="int"/>
+		</complexType>
+	</element>
+</schema>

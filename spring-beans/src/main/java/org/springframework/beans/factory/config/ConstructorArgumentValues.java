@@ -43,8 +43,10 @@ import org.springframework.util.ObjectUtils;
  */
 public class ConstructorArgumentValues {
 
+	// 注：存储指定索引的构造参数值
 	private final Map<Integer, ValueHolder> indexedArgumentValues = new LinkedHashMap<>();
 
+	// 注：存储未指定索引的构造参数值
 	private final List<ValueHolder> genericArgumentValues = new ArrayList<>();
 
 

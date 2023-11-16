@@ -46,6 +46,7 @@ public class MutablePropertyValues implements PropertyValues, Serializable {
 
 	private final List<PropertyValue> propertyValueList;
 
+	// 注：存储当前已经处理的属性名称
 	@Nullable
 	private Set<String> processedProperties;
 

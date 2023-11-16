@@ -165,8 +165,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/**
 	 * Dependency interfaces to ignore on dependency check and autowire, as Set of
 	 * Class objects. By default, only the BeanFactory interface is ignored.
-	 * 注：用于依赖检查以及自动装配中需要忽略的依赖类型。
-	 * 这是一个类型集合。默认情况下仅有BeanFactory接口是需要忽略的。
+	 * 注：用于依赖检查以及自动装配中需要忽略的依赖接口(接口的方法表明所依赖的类型)。
+	 * 这是一个类型集合。默认情况下仅有BeanFactory接口是需要忽略的【不止，可见当前类无参构造】。
+	 * 参考--> https://www.jianshu.com/p/3c7e0608ff1f?from=singlemessage、https://blog.csdn.net/vistaed/article/details/107315265
 	 */
 	private final Set<Class<?>> ignoredDependencyInterfaces = new HashSet<>();
 
@@ -196,12 +197,25 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Create a new AbstractAutowireCapableBeanFactory.
+	 * 注：创建bean工厂实例：初始化AbstractAutowireCapableBeanFactory数据
 	 */
 	public AbstractAutowireCapableBeanFactory() {
-		super();
+		super();		// 注：其父类AbstractBeanFactory无参构造没有任何逻辑
+		/**
+		 * 注：将bean工厂相关的aware接口方法在自动装配时忽略。
+		 * 1. 为什么要忽略？
+		 * 在bean属性初始化之前，Aware相关要么会显示调用(比如BeanNameAware)，要么通过后置处理器调用。因此就不需要自动装配、
+		 * 2. ignoredDependencyInterfaces和ignoredDependencyTypes有什么区别？
+		 * 参考：https://www.jianshu.com/p/3c7e0608ff1f?from=singlemessage、https://blog.csdn.net/vistaed/article/details/107315265
+		 */
 		ignoreDependencyInterface(BeanNameAware.class);
 		ignoreDependencyInterface(BeanFactoryAware.class);
 		ignoreDependencyInterface(BeanClassLoaderAware.class);
+		/**
+		 * 注：初始化bean实例化策略
+		 * 默认的实例化策略是CglibSubclassingInstantiationStrategy类型对象，其支持CGLIB动态生成子类实例。
+		 * 然而，如果是在本地镜像中，实例化策略为SimpleInstantiationStrategy类型对象，不支持CGLIB动态生成子类实例，会排除异常。
+		 */
 		if (IN_NATIVE_IMAGE) {
 			this.instantiationStrategy = new SimpleInstantiationStrategy();
 		}
@@ -305,8 +319,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * BeanFactoryAware or ApplicationContext through ApplicationContextAware.
 	 * <p>By default, only the BeanFactoryAware interface is ignored.
 	 * For further types to ignore, invoke this method for each type.
+	 * 注：自动装配时忽略指定的接口依赖。
+	 * (ps：这个接口依赖需要进一步说明，接口依赖是指通过该接口依赖的bean，比如通过BeanFactoryAware接口依赖的BeanFactory类型属性)
+	 * - 这块功能通常用于应用上下文中注册一些内部依赖，这部分依赖可以通过spring提供的机制来进行解析。
+	 * 比如通过BeanFactoryAware解析的BeanFactory类型属性、通过ApplicationContextAware解析的ApplicationContext类型属性。
+	 * - 默认情况下，仅有BeanFactoryAware接口会被忽略【这个注释可能随着spring更新不适用，可见当前类的无参构造】。对于其他想要忽略的依赖接口，
+	 * 可以调用当前方法添加到ignoredDependencyInterfaces集合中。
 	 * @see org.springframework.beans.factory.BeanFactoryAware
 //	 * @see org.springframework.context.ApplicationContextAware
+	 * 注：参考--> https://www.jianshu.com/p/3c7e0608ff1f?from=singlemessage、https://blog.csdn.net/vistaed/article/details/107315265
 	 */
 	public void ignoreDependencyInterface(Class<?> ifc) {
 		this.ignoredDependencyInterfaces.add(ifc);

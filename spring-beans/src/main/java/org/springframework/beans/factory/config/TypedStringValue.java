@@ -26,9 +26,12 @@ import org.springframework.util.ObjectUtils;
  * Holder for a typed String value. Can be added to bean definitions
  * in order to explicitly specify a target type for a String value,
  * for example for collection elements.
+ * 注：封装一个具有声明类型的字符串值。
+ * 可以添加到bean定义中，以便显示指定String的目标类型，比如集合类型
  *
  * <p>This holder will just store the String value and the target type.
  * The actual conversion will be performed by the bean factory.
+ * 注：当前类型对象仅存储了String值以及其目标类型，具体的转换将由Bean工厂执行。
  *
  * @author Juergen Hoeller
  * @since 1.2

@@ -115,6 +115,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	private SourceExtractor sourceExtractor = new NullSourceExtractor();
 
+	// 注：命名空间处理器的解析器
 	@Nullable
 	private NamespaceHandlerResolver namespaceHandlerResolver;
 
@@ -127,6 +128,10 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	private final XmlValidationModeDetector validationModeDetector = new XmlValidationModeDetector();
 
+	/**
+	 * 注：用于记录当前线程正在加载的资源集合
+	 * 这意味着允许加载多个bean定义xml文件(文件引用)，并且不允许加载同一资源文件多次。
+	 */
 	private final ThreadLocal<Set<EncodedResource>> resourcesCurrentlyBeingLoaded =
 			new NamedThreadLocal<Set<EncodedResource>>("XML bean definition resources currently being loaded"){
 				@Override
@@ -307,11 +312,16 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 */
 	@Override
 	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		/**
+		 * 注：将资源实例(resource)由EncodedResource类型代理。
+		 * 后续将加载xml文件时，需要确定编码、字符集，当然这里不确定，则使用默认UTF-8
+		 */
 		return loadBeanDefinitions(new EncodedResource(resource));
 	}
 
 	/**
 	 * Load bean definitions from the specified XML file.
+	 * 注：从指定的xml文件中加载bean定义
 	 * @param encodedResource the resource descriptor for the XML file,
 	 * allowing to specify an encoding to use for parsing the file
 	 * @return the number of bean definitions found
@@ -326,15 +336,23 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
 
 		if (!currentResources.add(encodedResource)) {
+			// 注：防止循环引用(import)，重复加载资源
 			throw new BeanDefinitionStoreException(
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
 
 		try (InputStream inputStream = encodedResource.getResource().getInputStream()) {
+			// 注：将xml文件输入流封装为sax所需要的InputSource-输入源对象
 			InputSource inputSource = new InputSource(inputStream);
 			if (encodedResource.getEncoding() != null) {
+				// 注：如果上游传进来的resource有指定编码，那sax就设置输入源为该编码；否则就使用默认的UTF-8
 				inputSource.setEncoding(encodedResource.getEncoding());
 			}
+			/**
+			 * 注：真正加载bean定义；
+			 * inputSource是为了生成Document对象
+			 * encodedResource.getResource()就是封装的classPath加载的xml资源
+			 */
 			return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 		}
 		catch (IOException ex) {
@@ -376,6 +394,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
 	 * Actually load bean definitions from the specified XML file.
+	 * 注：从指定的xml文件中加载bean定义
 	 * @param inputSource the SAX InputSource to read from
 	 * @param resource the resource descriptor for the XML file
 	 * @return the number of bean definitions found
@@ -387,7 +406,13 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throws BeanDefinitionStoreException {
 
 		try {
+			// 注：根据inputSource加载DOM树模型，便于读取节点操作
 			Document doc = doLoadDocument(inputSource, resource);
+			/**
+			 * 注：解析DOM树中的bean定义，注册到this.registry，并会返回bean定义的个数
+			 * registry的类型为BeanDefinitionRegistry实例。BeanDefinitionRegistry定义了一些注册bean定义的方法。
+			 * 所有bean工厂、context上下文都会继承BeanDefinitionRegistry接口。因此，registry属性一般都引用的bean工厂或context上下文
+			 */
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -421,6 +446,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
 	 * Actually load the specified document using the configured DocumentLoader.
+	 * 注：使用配置DOM文档加载器加载xml文件
 	 * @param inputSource the SAX InputSource to read from
 	 * @param resource the resource descriptor for the XML file
 	 * @return the DOM Document
@@ -429,6 +455,11 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see DocumentLoader#loadDocument
 	 */
 	protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
+		/**
+		 * 注：this.documentLoader的类型为DefaultDocumentLoader
+		 * getEntityResolver()是为了获取标签的验证解析器。【如果是自定义标签，需要手动向BDReader中设置该解析器】
+		 * getValidationModeForResource(resource)会读取xml文件的前几行判断是DTD验证模式还是XSD验证模式
+		 */
 		return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler,
 				getValidationModeForResource(resource), isNamespaceAware());
 	}
@@ -506,9 +537,25 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		/**
+		 * 注：XmlBeanDefinitionReader负责将xml文件解析为DOM对象，而实际解析、注册bean定义交给BeanDefinitionDocumentReader来处理。
+		 * BeanDefinitionDocumentReader的实例将有this.documentReaderClass实例化获得，默认为DefaultBeanDefinitionDocumentReader类型。
+		 * 为什么不直接实例化DefaultBeanDefinitionDocumentReader对象呢？便于用户通过设置documentReaderClass属性自定义bean的解析逻辑。
+		 */
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		/**
+		 * 注：记录下当前bean注册中心中已有的bean定义个数
+		 * this.registry就是bean定义注册中心，一般往往是bean工厂或者context上下文实例。
+		 */
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		/**
+		 * 注：XmlBeanDefinitionReader将bean定义的解析任务交给BeanDefinitionDocumentReader实例。
+		 * 其所需的数据不仅需要包含重要的DOM对象，还需要其他数据，这些数据统一封装在ReaderContext中，对于XML文件来说，就是XmlReaderContext。
+		 * XmlReaderContext包含的信息有xml文件资源对象、失败记录文件、事件监听器、源解析器，xmlReader、命名空间处理解析器(可自定义)
+		 * (由此可见，Context内容均是可以由用户自己指定来介入bean定义解析的行为。)
+		 */
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		// 注：计算当前新增bean定义的个数
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}
 

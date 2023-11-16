@@ -378,6 +378,7 @@ public abstract class ResourceUtils {
 	 * @throws URISyntaxException if the location wasn't a valid URI
 	 */
 	public static URI toURI(String location) throws URISyntaxException {
+		// 注：URI中不允许存在“ ”, " "使用%20替换
 		return new URI(StringUtils.replace(location, " ", "%20"));
 	}
 

@@ -24,26 +24,30 @@ import org.springframework.util.ObjectUtils;
 
 /**
  * Represents an override of a method that looks up an object in the same IoC context.
+ * 注：表示在同一个上下文中查找某一个对象的的方法进行重写覆盖。
  *
  * <p>Methods eligible for lookup override must not have arguments.
- *
+ * 注：符合查找条件的覆盖方法不能拥有参数
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 1.1
  */
 public class LookupOverride extends MethodOverride {
 
+	// 注：bean实例的名称
 	@Nullable
 	private final String beanName;
 
+	// 注：被覆盖的方法名称
 	@Nullable
 	private Method method;
 
 
 	/**
 	 * Construct a new LookupOverride.
-	 * @param methodName the name of the method to override
-	 * @param beanName the name of the bean in the current {@code BeanFactory}
+	 * 注：创建一个LookupOverride实例。
+	 * @param methodName the name of the method to override 需要被重写的方法名称
+	 * @param beanName the name of the bean in the current {@code BeanFactory} 在当前bean容器中的bean名称
 	 * that the overridden method should return (may be {@code null})
 	 */
 	public LookupOverride(String methodName, @Nullable String beanName) {
