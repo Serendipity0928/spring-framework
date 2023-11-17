@@ -21,7 +21,9 @@ import org.springframework.lang.Nullable;
 /**
  * Used by the {@link org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader} to
  * locate a {@link NamespaceHandler} implementation for a particular namespace URI.
- *
+ * 默认bean定义文档读取器会使用命名空间解析器实例来根据命名空间返回不同的命名空间解析器；
+ * 比如：...
+ * - spring内部仅提供了一个默认的命名空间解析器实现类-DefaultNamespaceHandlerResolver
  * @author Rob Harrop
  * @since 2.0
  * @see NamespaceHandler

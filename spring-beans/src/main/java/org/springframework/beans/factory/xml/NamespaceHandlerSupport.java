@@ -31,10 +31,14 @@ import org.springframework.lang.Nullable;
  * Support class for implementing custom {@link NamespaceHandler NamespaceHandlers}.
  * Parsing and decorating of individual {@link Node Nodes} is done via {@link BeanDefinitionParser}
  * and {@link BeanDefinitionDecorator} strategy interfaces, respectively.
+ * 注：NamespaceHandlerSupport是自定义命名空间处理器的支持类。自定义处理器通过继承该类只需要实现init方法，并注册不同自定义标签的解析器即可。
+ * NamespaceHandlerSupport分别通过BeanDefinitionParser、BeanDefinitionDecorator两个解析策略来完成单个DOM节点的bean解析以及装饰功能。
  *
  * <p>Provides the {@link #registerBeanDefinitionParser} and {@link #registerBeanDefinitionDecorator}
  * methods for registering a {@link BeanDefinitionParser} or {@link BeanDefinitionDecorator}
  * to handle a specific element.
+ * 注：NamespaceHandlerSupport提供了registerBeanDefinitionParser以及registerBeanDefinitionDecorator方法来注册bean定义处理器
+ * 或者bean定义装饰器去处理一个指定DOM元素。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -47,18 +51,24 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	/**
 	 * Stores the {@link BeanDefinitionParser} implementations keyed by the
 	 * local name of the {@link Element Elements} they handle.
+	 * 注：缓存DOM元素的基础名称(冒号之后)到bean定义解析器的映射
+	 * - 这个map的key表示的标签都表示了一个bean定义。换句话说，key表示的标签名会处于<beans>标签下。
 	 */
 	private final Map<String, BeanDefinitionParser> parsers = new HashMap<>();
 
 	/**
 	 * Stores the {@link BeanDefinitionDecorator} implementations keyed by the
 	 * local name of the {@link Element Elements} they handle.
+	 * 注：缓存DOM元素的基础名称(冒号之后)到bean定义装饰器的映射
+	 * - 这个map的key表示的标签都表示增加bean定义数据。换句话说，key表示的标签名会处于<bean>标签下。
 	 */
 	private final Map<String, BeanDefinitionDecorator> decorators = new HashMap<>();
 
 	/**
 	 * Stores the {@link BeanDefinitionDecorator} implementations keyed by the local
 	 * name of the {@link Attr Attrs} they handle.
+	 * 注：缓存DOM属性的基础名称到bean定义装饰器的映射
+	 * - 这个map的key表示的属性都表示增加bean定义数据。换句话说，key表示的属性名会处于<bean>标签或其下某个标签的属性下。
 	 */
 	private final Map<String, BeanDefinitionDecorator> attributeDecorators = new HashMap<>();
 

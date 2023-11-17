@@ -26,19 +26,28 @@ import org.springframework.lang.Nullable;
 /**
  * Base interface used by the {@link DefaultBeanDefinitionDocumentReader}
  * for handling custom namespaces in a Spring XML configuration file.
+ * 注：DefaultBeanDefinitionDocumentReader-默认bean定义DOM树读取器
+ * NamespaceHandler-命名空间处理器是在解析XML DOM树中的bean定义时需要解析自定义标签的基本接口。
  *
  * <p>Implementations are expected to return implementations of the
  * {@link BeanDefinitionParser} interface for custom top-level tags and
  * implementations of the {@link BeanDefinitionDecorator} interface for
  * custom nested tags.
+ * 注：命名空间处理器需要返回自定义的bean标签的解析器，即BeanDefinitionParser，
+ * 以及自定义内嵌标签的装饰器，即BeanDefinitionDecorator;
  *
  * <p>The parser will call {@link #parse} when it encounters a custom tag
  * directly under the {@code <beans>} tags and {@link #decorate} when
  * it encounters a custom tag directly under a {@code <bean>} tag.
+ * 注：当遇到<beans>标签内的自定义标签时，命名空间处理器会调用其parse方法返回bean定义实例。
+ * 当遇到<bean>标签内嵌的自定义标签是，命名空间处理器会调用其decorate方法来对指定的bean定义进行装饰。
  *
  * <p>Developers writing their own custom element extensions typically will
  * not implement this interface directly, but rather make use of the provided
  * {@link NamespaceHandlerSupport} class.
+ * 注：开发人员增加自定义标签时通常不会直接实现这个接口，
+ * 而是利用spring提供的NamespaceHandlerSupport类，即继承NamespaceHandlerSupport类的能力，而仅需要实现Init方法即可。
+ * 在init方法中可初始化NamespaceHandlerSupport中的注册三种解析器：parsers、decorators、attributeDecorators
  *
  * @author Rob Harrop
  * @author Erik Wiersma
@@ -51,8 +60,13 @@ public interface NamespaceHandler {
 	/**
 	 * Invoked by the {@link DefaultBeanDefinitionDocumentReader} after
 	 * construction but before any custom elements are parsed.
-	 * // 注：创建NamespaceHandler之后，再自定义标签解析之前会调用当前初始化方法
+	 * 注：DefaultBeanDefinitionDocumentReader：通过DOM树来解析bean定义文件
+	 * 其中在解析自定义标签之前需要获取对应自定义标签的命名空间处理器实例。
+	 * 而在实例化命名空间之后就会调用该初始化方法。---参见：DefaultNamespaceHandlerResolver#resolve
+	 * - 还有个问题是，命名空间处理器初始化什么呢？初始化自定义bean标签的解析器。即下面这个方法：
 	 * @see NamespaceHandlerSupport#registerBeanDefinitionParser(String, BeanDefinitionParser)
+	 * - 实际上很少会有解析器直接实现当前接口，而都是继承NamespaceHandlerSupport抽象类，开发者自定义处理器时只需要实现init方法即可，
+	 * 在init方法中可初始化NamespaceHandlerSupport中的注册三种解析器：parsers、decorators、attributeDecorators
 	 */
 	void init();
 
