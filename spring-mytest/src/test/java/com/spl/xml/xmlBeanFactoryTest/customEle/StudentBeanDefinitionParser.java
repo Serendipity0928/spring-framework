@@ -23,6 +23,7 @@ public class StudentBeanDefinitionParser extends AbstractSingleBeanDefinitionPar
 		if (StringUtils.hasText(age)) {
 			beanDefinitionBuilder.addPropertyValue("age",age);
 		}
+		beanDefinitionBuilder.getRawBeanDefinition().setBeanClass(Student.class);
 	}
 
 }

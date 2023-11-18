@@ -76,23 +76,34 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	/**
 	 * Parses the supplied {@link Element} by delegating to the {@link BeanDefinitionParser} that is
 	 * registered for that {@link Element}.
+	 * 注：将解析指定自定义标签的任务委托给已注册的自定义bean定义解析器。
+	 * 自定义bean定义解析器由registerBeanDefinitionParser方法注册，该方法权限类型为protected，基本由Support子类的init方法注入。
 	 */
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
+		// 注：根据当前DOM节点标签的基础名(冒号后面)来找到bean定义解析器。
 		BeanDefinitionParser parser = findParserForElement(element, parserContext);
+		/**
+		 * 注：通过自定义bean定义解析器来解析对应的标签内容。
+		 * 每一个自定义的标签都必须有对应的解析器。
+		 */
 		return (parser != null ? parser.parse(element, parserContext) : null);
 	}
 
 	/**
 	 * Locates the {@link BeanDefinitionParser} from the register implementations using
 	 * the local name of the supplied {@link Element}.
+	 * 注：根据当前DOM节点标签的基础名(冒号后面)来找到注册的自定义bean定义解析器。
 	 */
 	@Nullable
 	private BeanDefinitionParser findParserForElement(Element element, ParserContext parserContext) {
+		// 注：通过BeanDefinitionParserDelegate来获取当前DOM节点标签的基础名
 		String localName = parserContext.getDelegate().getLocalName(element);
+		// 注：从this.parsers缓存中找到bean定义解析器
 		BeanDefinitionParser parser = this.parsers.get(localName);
 		if (parser == null) {
+			// 注：不存在就无法解析对应的标签，抛出异常
 			parserContext.getReaderContext().fatal(
 					"Cannot locate BeanDefinitionParser for element [" + localName + "]", element);
 		}

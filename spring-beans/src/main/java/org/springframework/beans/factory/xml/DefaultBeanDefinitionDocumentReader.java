@@ -402,6 +402,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		if (bdHolder != null) {
 			// 注：检查自定义属性及标签，对当前已获得的内部bean定义进行装饰
 			// 注：解析默认标签中的自定义标签元素
+			// TODO: 2023/11/18 如何自定义内嵌标签？
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.

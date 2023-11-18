@@ -75,15 +75,18 @@ public interface NamespaceHandler {
 	 * {@link BeanDefinition BeanDefinitions} with the
 	 * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
 	 * that is embedded in the supplied {@link ParserContext}.
-	 * 注：解析指定的标签，并且将解析后的bean定义注册到bean定义注册中心去。(相关上下文数据存储在ParserContext中)
+	 * 注：解析指定的自定义的bean标签，并且将解析后的bean定义注册到bean定义注册中心去。(相关上下文数据存储在ParserContext中)
 	 * <p>Implementations should return the primary {@code BeanDefinition}
 	 * that results from the parse phase if they wish to be used nested
 	 * inside (for example) a {@code <property>} tag.
+	 * 注：如果自定义标签希望嵌套含有值标签(比如<property>)的内部使用时，对应的命名空间实现类的parse方法应在解析阶段返回最初的bean定义(非BeanDefinitionHolder)。
 	 * <p>Implementations may return {@code null} if they will
 	 * <strong>not</strong> be used in a nested scenario.
+	 * 注：如果自定义标签不会再嵌套场景中作为值来使用，该解析方法返回的bean定义可能是个null值。
 	 * @param element the element that is to be parsed into one or more {@code BeanDefinitions}
 	 * @param parserContext the object encapsulating the current state of the parsing process
 	 * @return the primary {@code BeanDefinition} (can be {@code null} as explained above)
+	 * 注：大部分自定义标签的解析器都直接继承NamespaceHandlerSupport，该支持类实现了解析(parse)逻辑。
 	 */
 	@Nullable
 	BeanDefinition parse(Element element, ParserContext parserContext);

@@ -29,6 +29,8 @@ import org.springframework.util.ObjectUtils;
  * {@link org.springframework.beans.factory.config.BeanDefinition BeanDefinitions}
  * using the builder pattern. Intended primarily for use when implementing Spring 2.0
  * {@link org.springframework.beans.factory.xml.NamespaceHandler NamespaceHandlers}.
+ * 注：使用建造者模式来实现程式化的构件bean定义实例。
+ * 最开始的目的是用于命名空间处理器解析bean定义使用。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -146,6 +148,8 @@ public final class BeanDefinitionBuilder {
 
 	/**
 	 * Return the current BeanDefinition object in its raw (unvalidated) form.
+	 * 注：返回当前的bean定义实例(尚未被验证)。
+	 * 一般在填充bean实例时都是调用该方法获取bean实例
 	 * @see #getBeanDefinition()
 	 */
 	public AbstractBeanDefinition getRawBeanDefinition() {
@@ -154,6 +158,8 @@ public final class BeanDefinitionBuilder {
 
 	/**
 	 * Validate and return the created BeanDefinition object.
+	 * 注：bean定义构造完成后，先验证通过(用户自定义的不一定合理)后在返回bean定义
+	 * 【注意这个方法会执行bean定义的验证，一般获取最终bean定义才会调用】
 	 */
 	public AbstractBeanDefinition getBeanDefinition() {
 		this.beanDefinition.validate();
