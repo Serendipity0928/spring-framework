@@ -35,6 +35,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * 注：详见BeanDefinitionDecorator，这里不再继续追看了，后续需要再添加注释
  * Base implementation for
  * {@link org.springframework.beans.factory.xml.BeanDefinitionDecorator BeanDefinitionDecorators}
  * wishing to add an {@link org.aopalliance.intercept.MethodInterceptor interceptor}

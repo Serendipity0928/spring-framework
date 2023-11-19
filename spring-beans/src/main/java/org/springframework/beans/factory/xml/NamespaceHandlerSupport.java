@@ -113,13 +113,20 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	/**
 	 * Decorates the supplied {@link Node} by delegating to the {@link BeanDefinitionDecorator} that
 	 * is registered to handle that {@link Node}.
+	 * 注：将解析指定自定义标签并装饰bean定义的任务委托给已注册的自定义bean定义装饰器。
+	 * 自定义bean定义装饰器由registerBeanDefinitionDecorator(装饰内嵌节点)以及registerBeanDefinitionDecoratorForAttribute(装饰属性)方法注册，
+	 * 该方法权限类型为protected，基本由Support子类的init方法注入。
 	 */
 	@Override
 	@Nullable
 	public BeanDefinitionHolder decorate(
 			Node node, BeanDefinitionHolder definition, ParserContext parserContext) {
-
+		// 注：根据当前DOM节点的基础名(冒号后面)来找到bean定义装饰器。
 		BeanDefinitionDecorator decorator = findDecoratorForNode(node, parserContext);
+		/**
+		 * 注：通过自定义bean定义装饰器来解析对应的标签内容并装饰bean定义。
+		 * 每一个自定义的标签都必须有对应的装饰器。
+		 */
 		return (decorator != null ? decorator.decorate(node, definition, parserContext) : null);
 	}
 
@@ -127,22 +134,27 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	 * Locates the {@link BeanDefinitionParser} from the register implementations using
 	 * the local name of the supplied {@link Node}. Supports both {@link Element Elements}
 	 * and {@link Attr Attrs}.
+	 * 注：根据提供的DOM节点的基础名来定位bean定义的解析器。DOM节点支持自定义标签节点以及自定义属性。
 	 */
 	@Nullable
 	private BeanDefinitionDecorator findDecoratorForNode(Node node, ParserContext parserContext) {
 		BeanDefinitionDecorator decorator = null;
 		String localName = parserContext.getDelegate().getLocalName(node);
 		if (node instanceof Element) {
+			// 注：如果未内嵌标签节点，通过这里获取装饰器
 			decorator = this.decorators.get(localName);
 		}
 		else if (node instanceof Attr) {
+			// 注：如果自定义属性，通过这里获取装饰器
 			decorator = this.attributeDecorators.get(localName);
 		}
 		else {
+			// 注：DOM节点非标签节点或属性，报错，抛出异常
 			parserContext.getReaderContext().fatal(
 					"Cannot decorate based on Nodes of type [" + node.getClass().getName() + "]", node);
 		}
 		if (decorator == null) {
+			// 注：未找到装饰器，报错，抛出异常
 			parserContext.getReaderContext().fatal("Cannot locate BeanDefinitionDecorator for " +
 					(node instanceof Element ? "element" : "attribute") + " [" + localName + "]", node);
 		}

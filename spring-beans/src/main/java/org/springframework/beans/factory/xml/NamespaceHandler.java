@@ -94,15 +94,18 @@ public interface NamespaceHandler {
 	/**
 	 * Parse the specified {@link Node} and decorate the supplied
 	 * {@link BeanDefinitionHolder}, returning the decorated definition.
-	 * 注：解析指定的节点，并且装饰提供的bean定义后返回。
+	 * 注：解析指定的DOM节点，并且装饰提供的bean定义后返回。
 	 * <p>The {@link Node} may be either an {@link org.w3c.dom.Attr} or an
 	 * {@link Element}, depending on whether a custom attribute or element
 	 * is being parsed.
+	 * 注：传入的Node类型参数要么是属性(Attr)要么是标签节点(Element)，这取决于被解析是自定义的属性或者自定义的内嵌标签。
 	 * <p>Implementations may choose to return a completely new definition,
 	 * which will replace the original definition in the resulting
 	 * {@link org.springframework.beans.factory.BeanFactory}.
+	 * 注：该方法的实现可能会返回一个完全新的bean定义实例，替代之前bean定义实例注册到bean工厂中。
 	 * <p>The supplied {@link ParserContext} can be used to register any
 	 * additional beans needed to support the main definition.
+	 * 注：可以利用入参中的解析上下文实例来注册任何额外的bean实例去支持主bean定义
 	 * @param source the source element or attribute that is to be parsed
 	 * @param definition the current bean definition
 	 * @param parserContext the object encapsulating the current state of the parsing process
@@ -110,6 +113,9 @@ public interface NamespaceHandler {
 	 * or simply the original bean definition if no decoration is required.
 	 * A {@code null} value is strictly speaking invalid, but will be leniently
 	 * treated like the case where the original bean definition gets returned.
+	 * 注：返回需要注册到bean工厂中的装饰bean。【注意该方法内部不需要实现注册，而parse需要实现注册逻辑】
+	 * 如果内部没有装饰的动作，会简单地返回原始bean定义。
+	 * 严格来说，该方法实现逻辑不应该返回null，但想返回原始bean定义一样，也可能会返回null(返回null，外层会忽略该装饰结果)
 	 */
 	@Nullable
 	BeanDefinitionHolder decorate(Node source, BeanDefinitionHolder definition, ParserContext parserContext);
