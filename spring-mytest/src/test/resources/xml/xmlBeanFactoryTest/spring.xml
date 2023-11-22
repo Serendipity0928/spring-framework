@@ -5,6 +5,8 @@
 	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 	   http://www.lexueba.com/schema/student http://www.lexueba.com/schema/student.xsd">
 
-	<myname:student id="testbean" name="dsa" age="12"/>
+<!--	<myname:student id="testbean" name="dsa" age="12"/>-->
+
+	<bean id="testBean" class="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory"/>
 
 </beans>

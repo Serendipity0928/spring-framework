@@ -95,9 +95,9 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	volatile Class<?> resolvedTargetType;
 
 	/** Package-visible field for caching if the bean is a factory bean.
-	 * 注：是否当前bean为FactoryBean；
-	 * 延迟初始化属性，后续会根据factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
-	 * isFactoryBean
+	 * 注：是否当前bean为FactoryBean;
+	 * - 后续会根据factoryMethodName属性来推断返回类型，进而判断是否为FactoryBean
+	 * - 创建并初始化bean实例后，会检查当前bean是否FactoryBean，是则设置该属性为true；见：AbstractBeanFactory#getObjectForBeanInstance
 	 * */
 	@Nullable
 	volatile Boolean isFactoryBean;

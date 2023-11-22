@@ -18,10 +18,13 @@ public class Main {
 //		System.setProperty("spl.tmp", "spl1.xml");
 
 		BeanFactory bf = new XmlBeanFactory(new ClassPathResource("xml/xmlBeanFactoryTest/spring.xml"));
-		Student bean = (Student) bf.getBean("testbean");
-		System.out.println(bean.getName());
-		System.out.println(bean.getId());
-		System.out.println(bean.getAge());
+//		Object bean = bf.getBean("&testBean");
+		Object bean1 = bf.getBean("testBean");
+//		Student bean = (Student) bf.getBean("testBean");
+//		System.out.println(bean.getName());
+//		System.out.println(bean.getId());
+//		System.out.println(bean.getAge());
+		System.out.println("??");
 	}
 
 }

@@ -1506,6 +1506,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * Overridden in order to implicitly register the currently created bean as
 	 * dependent on further beans getting programmatically retrieved during a
 	 * {@link Supplier} callback.
+	 * 注：重写getObjectForBeanInstance方法，以便于隐式地注册线程中当前正在创建的bean依赖于Supplier回调期间以编程方法检索的其他bean
 	 * @since 5.0
 	 * @see #obtainFromSupplier
 	 */
@@ -1513,11 +1514,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected Object getObjectForBeanInstance(
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
+		// 注：从线程上下文中获取当前正常创建的bean实例；何时添加到线程上下文中？
 		String currentlyCreatedBean = this.currentlyCreatedBean.get();
 		if (currentlyCreatedBean != null) {
+			// 注：如果存在当前线程正在创建的bean，则此处注册线程bean依赖于当前beanName
 			registerDependentBean(beanName, currentlyCreatedBean);
 		}
 
+		// 注：继续从当前bean实例中获取对象；即解析FactoryBean的过程
 		return super.getObjectForBeanInstance(beanInstance, name, beanName, mbd);
 	}
 

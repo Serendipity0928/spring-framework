@@ -44,7 +44,9 @@ import org.springframework.lang.Nullable;
 public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanRegistry {
 
 	/** Cache of singleton objects created by FactoryBeans: FactoryBean name to object.
-	 * 注：用于缓存工厂Bean名称到其生产的bean实例的映射。
+	 * 注：用于缓存【单例】工厂Bean名称到【单例】工厂bean实例的映射。
+	 * - 对于单例工厂对象是缓存在单例bean缓存对象(singletonObjects)中
+	 * - 对于单例工厂对象产生的目标单例bean对象缓存在工厂bean对象缓存中-即factoryBeanObjectCache
 	 * */
 	private final Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>(16);
 
@@ -89,10 +91,10 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 
 	/**
 	 * Obtain an object to expose from the given FactoryBean.
-	 * 注：根据指定的工厂Bean生产目标bean实例
+	 * 注：根据指定的工厂对象来获取目标工厂bean实例。创建工厂bean实例后，会调用所有的bean后置处理器
 	 * @param factory the FactoryBean instance // 注：工厂bean实例
 	 * @param beanName the name of the bean	// 注：目标bean的名称
-	 * // 注：是否当前bean是否需要后置处理器处理；疑问：非动态生成需要？
+	 * // 注：是否当前bean是否需要后置处理器处理；动态生成工厂bean不需要
 	 * @param shouldPostProcess whether the bean is subject to post-processing
 	 * @return the object obtained from the FactoryBean
 	 * @throws BeanCreationException if FactoryBean object creation failed
@@ -101,12 +103,15 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	protected Object getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) {
 		if (factory.isSingleton() && containsSingleton(beanName)) {
 			/**
-			 * 注：如果当前工厂是个单例工厂，并且该工厂bean已经缓存在工厂中
+			 * 注：如果当前工厂本身是个单例Bean【默认情况下为true】，并且该工厂bean已经作为单例缓存在工厂中
+			 * - 关于containsSingleton(beanName)说明：如果工厂bean实例为单例，其在实例化的时候就会被添加到单例缓存中。
+			 * - DefaultSingletonBeanRegistry#getSingleton
 			 */
 			synchronized (getSingletonMutex()) {
 				/**
-				 * 注：针对singletonObjects缓存添加同步锁【为什么不是对factoryBeanObjectCache加锁？】
-				 * 如果在factoryBeanObjectCache缓存中已经存在工厂bean映射的生成bean实例，就直接返回了
+				 * 注：针对singletonObjects缓存添加同步锁
+				 * - 这里说明下为什么不是对factoryBeanObjectCache加锁？spring要求在创建任何单例bean时都是通过getSingletonMutex返回的对象加锁。
+				 * - 如果在factoryBeanObjectCache缓存中已经存在工厂bean映射的生成bean实例，就直接返回了
 				 */
 				Object object = this.factoryBeanObjectCache.get(beanName);
 				if (object == null) {
@@ -116,20 +121,32 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 					// (e.g. because of circular reference processing triggered by custom getBean calls)
 					/**
 					 * 注：同步区是对singletonObjects上的锁，有可能在上述getObject期间目标bean已经通过循环引用的处理初始化了。
-					 * 这里再次检查缓存中是否存在目标bean
+					 * 这里再次检查缓存中是否存在目标bean，存在则直接返回即可；
+					 * 不存在则说明本次是第一次获取，需要应用bean初始化后的后置处理器后在添加到工厂bean对象缓存中。
 					 */
 					Object alreadyThere = this.factoryBeanObjectCache.get(beanName);
 					if (alreadyThere != null) {
 						object = alreadyThere;	// 注：已经存在就直接返回之
 					}
 					else {
-						if (shouldPostProcess) { 	// 注：是否需要后置处理器处理
+						/**
+						 * 第一次创建工厂bean对象，根据其是否为动态生成类来判断是否需要应用bean后置处理器方法。
+						 * 应用后置处理器初始化方法后的对象才可以当做最终对象缓存起来。
+						 * - 但是需要注意一点，bean后置处理器也有可能获取该工厂bean对象，因此需要解决类似循环引用的问题。
+						 * 如何解决呢？在执行后置处理器之前，将该工厂bean名称设置为正在创建中(实际上已经创建完成)，
+						 * 如果在处理的过程中又再次来执行后置处理器之前，会判断这个标识。是则直接提前返回不完全对象。
+						 * 【个人觉得这里使用singletonsCurrentlyInCreation缓存不好，因为确实已经创建完成了。
+						 *   而且还有一个问题，破坏了单例工厂bean。直接返回的对象和正在创建中的对象不是一个引用。
+						 * 】
+						 */
+						if (shouldPostProcess) { 	// 注：是否需要后置处理器处理【非动态生成类这里为true】
 							if (isSingletonCurrentlyInCreation(beanName)) {
 								// Temporarily return non-post-processed object, not storing it yet..
-								// 注：对于正在创建的bean实例，暂时先不对其进行后置处理，也不会缓存
+								// 注：在调用后置处理器过程中，如果需要获取正在创建的工厂bean实例，直接返回即可(更不需要缓存)。
+								// 问题：这里返回的对象和实际创建的对象不是一个对象引用，破坏了单例
 								return object;
 							}
-							// 疑问：这不是在创建之前回调吗？
+							// 早期疑问：这不是在创建之前回调吗？用在这里不符合方法含义，有待商榷。
 							beforeSingletonCreation(beanName);
 							try {
 								// 注：这里应用所有的Bean后置处理器的postProcessAfterInitialization方法。
@@ -140,12 +157,17 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 										"Post-processing of FactoryBean's singleton object failed", ex);
 							}
 							finally {
-								// // 疑问：这不是在创建之后回调吗？
+								// 早期疑问：这不是在创建之后回调吗？同上
 								afterSingletonCreation(beanName);
 							}
 						}
+						/**
+						 * 这里再次做containsSingleton防御性判断是否多余？在线程同步区之前就已经防御性判断了，这里判断让人无措。
+						 * 难道还有可能工厂对象在运行时从单例缓存中注销了，销毁了？
+						 * （根据git记录，这个防御性判断和上述正在创建bean机制属于同一个人）
+						 */
 						if (containsSingleton(beanName)) {
-							// 注：判断当前bean在单例bean缓存中，就将产生单例bean缓存在工厂bean缓存映射中
+							// 注：将产生单例工厂bean对象缓存在工厂bean对象缓存映射中；下次再通过单例工厂对象获取bean对象时，直接检查缓存返回即可。
 							this.factoryBeanObjectCache.put(beanName, object);
 						}
 					}
@@ -155,13 +177,13 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 		}
 		else {
 			/**
-			 * 注：如果当前工厂是个非单例的
+			 * 注：如果当前工厂是个非单例的，那么直接调用工厂对象的getObject获取工厂bean对象即可，不需要设计缓存
 			 */
 			Object object = doGetObjectFromFactoryBean(factory, beanName);
 			if (shouldPostProcess) {		// 注：是否需要后置处理器处理
 				try {
 					// 注：这里应用所有的Bean后置处理器的postProcessAfterInitialization方法。
-					// 疑问：这前后为什么不需要回调了？
+					// 早期疑问：这前后为什么不需要回调了？这里会不会有可能死循环？bean后置处理器中获取工厂bean对象。
 					object = postProcessObjectFromFactoryBean(object, beanName);
 				}
 				catch (Throwable ex) {

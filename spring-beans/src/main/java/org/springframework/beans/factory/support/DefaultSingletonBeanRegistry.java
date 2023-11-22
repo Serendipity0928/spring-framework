@@ -187,6 +187,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 	}
 
+	/**
+	 * 注：通过指定的bean名称从单例bean缓存中获取单例对象；
+	 * - 默认情况下允许获取当前bean的早期引用对象，即尚未执行属性填充以及初始化方法的对象。【注意这里是是否对当前bean获取早期引用，而不是是否返回！】
+	 * - 如果无法从单例缓存中找到，那么就会返回null
+	 */
 	@Override
 	@Nullable
 	public Object getSingleton(String beanName) {
@@ -197,23 +202,44 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * Return the (raw) singleton object registered under the given name.
 	 * <p>Checks already instantiated singletons and also allows for an early
 	 * reference to a currently created singleton (resolving a circular reference).
-	 * 注：返回指定beanName的已注册的原生bean；
-	 * 检查已经实例化的单例bean，并且也允许对正在创建的bean进行早期引用（用于解决循环引用）
+	 * 注：返回指定beanName的已注册的原生bean；（原生的含义是：如果是要获取工厂bean对象，这里会返回工厂对象。）
+	 * - 检查已经实例化的单例bean，并且也允许对正在创建的bean进行早期引用（用于解决循环引用）
 	 * @param beanName the name of the bean to look for
-	 * @param allowEarlyReference whether early references should be created or not  // 注：是否需创建早期引用
+	 * @param allowEarlyReference whether early references should be created or not
+	 * 注：是否需从三级缓存中获取(创建说法不太准确)早期引用。【注意这里是是否对当前bean早期引用进行获取，而不是是否返回！】
 	 * @return the registered singleton object, or {@code null} if none found
+	 * Q1：三级缓存中的ObjectFactory实例到底是什么？
+	 * 三级缓存中存储的是getEarlyBeanReference方法，该方法就是将未填充属性的刚实例化的对象返回，并执行SmartInstantiationAwareBeanPostProcessor后置处理器。
+	 * @see AbstractAutowireCapableBeanFactory#getEarlyBeanReference
+	 * AbstractAutowireCapableBeanFactory#doCreateBean
+	 * Q2：为什么要三级缓存，直接要二级缓存不行吗？
+	 * 从两个方面考虑：
+	 * 	 1. 通过getEarlyBeanReference方法，执行了后置处理器
+	 * 	 2. 有些情况下是不需要获取缓存中的对象，也更不需要获取早期对象，比如原型bean(以原型bean为例)
+	 * 	 	用户获取bean实例时，只会传入bean的名称，此时根本不知道是否为单例bean，如果获取了早期对象，就破坏了原型模式
+	 * 	 	如果在先合并bean定义后再判断是否需要从缓存中获取，就可能会影响性能了，因为设计父子bean定义还需要合并。
+	 * 	    因此，在bean创建后，初始化前，就会判断是否需要暴露单例bean的早期引用对象，允许则先存在三级缓存中。
+	 * 	    - 凡是存在三级缓存的bean，默认getBean均可以获取早期引用。
+	 * 	    - 三级缓存实际就是【是否可返回早期对象的判断语句】。而方法入参allowEarlyReference含义为【是否从三级缓存中获取早期对象】
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		// 注：① 先尝试从单例对象缓存(一级，完全初始化)中获取，存在则直接返回该单例对象
 		Object singletonObject = this.singletonObjects.get(beanName);
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
-			synchronized (this.singletonObjects) {
+			// 注：如果当前bean是正在创建过程中的单例bean，则尝试是否能获取到其早期实例引用(尚未属性填充及初始化)。
+			synchronized (this.singletonObjects) {	// 注：所有设计单例bean的创建动作，spring内部均是对单例bean缓存对象进行加锁【重要操作大家都停一停】
+				// 注：② 再尝试从早期引用对象缓存(二级，尚未属性填充及初始化)中获取，存在则直接返回。【注意早期引用的获取不需要受参数allowEarlyReference限制】
 				singletonObject = this.earlySingletonObjects.get(beanName);
 				if (singletonObject == null && allowEarlyReference) {
+					// 注：③ 如果允许创建当前bean的早期引用对象【参数决定】，则这里会尝试从单例创建工厂缓存(二级)中获取早期引用对象的函数式接口实例-ObjectFactory
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
-					if (singletonFactory != null) {
+					if (singletonFactory != null) {		// 注：有可能bean工厂不允许某些bean早期暴露-earlySingletonExposure
+						// 注：获取三级缓存中的ObjectFactory实例，并获取早期引用对象
 						singletonObject = singletonFactory.getObject();
+						// 注：将早期引用对象缓存在二级缓存中
 						this.earlySingletonObjects.put(beanName, singletonObject);
+						// 注：将ObjectFactory实例从缓存中移除，不需要再缓存了，已经在二级缓存中。
 						this.singletonFactories.remove(beanName);
 					}
 				}
@@ -697,13 +723,17 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 	/**
 	 * Exposes the singleton mutex to subclasses and external collaborators.
+	 * 注：向子类以及外部相关类暴露出单例互斥锁对象
 	 * <p>Subclasses should synchronize on the given Object if they perform
 	 * any sort of extended singleton creation phase. In particular, subclasses
 	 * should <i>not</i> have their own mutexes involved in singleton creation,
 	 * to avoid the potential for deadlocks in lazy-init situations.
+	 * - 如果子类在执行任何扩展类型的单例创建阶段时都应该添加当前返回对象的同步锁。
+	 * 特别地，子类不应该在创建单例bean时使用他们自己的互斥对象，以避免在懒加载场景出现潜在的死锁问题。
 	 */
 	@Override
 	public final Object getSingletonMutex() {
+		// 注：在创建单例bean时会对单例bean缓存map加锁
 		return this.singletonObjects;
 	}
 
