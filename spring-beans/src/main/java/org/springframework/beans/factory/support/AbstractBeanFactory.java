@@ -374,19 +374,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				 * 	 父工厂上面已经处理并判断了，这里已经确定是属于当前工厂内的bean。
 				 */
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
-				// 注：检查合并bean定义-非抽象bean才能创建实例
-				// TODO: 2023/11/22  
+				// 注：对合并后的bean定义进行检查-非抽象bean才能创建实例；(注册bean定义在注册到bean定义注册中心之前检查)
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
 				/**
-				 * 注：在当前bean创建之前，需保证其依赖于其他bean的初始化
+				 * 注：在当前bean创建之前，需保证“depends-on”属性指定的依赖bean提前初始化。
+				 * 1. 检查是否存在循环业务逻辑依赖，存在则抛出异常
+				 * 2. 将bean之前的依赖关系缓存起来。dependentBeanMap、dependenciesForBeanMap
+				 * 3. 触发依赖bean的初始化(依赖bean可以是父工厂中的bean)
+				 * 【重点说明】spring中的依赖区分为业务逻辑依赖、属性依赖。
+				 * - 业务逻辑依赖是指在业务含以上，不同bean之前存在初始化前后顺序的关系。这种情况下循环依赖是无法解决的。“depends-on”就是这种依赖关系。
+				 * - 属性依赖是指当前bean的属性赋值以及初始化依赖于另外一个bean实例。部分属性循环依赖可以通过多级缓存解决，而部分也无法解决。
+				 * - 依赖关系的缓存会存储以上两种依赖方式的关系，便于后续使用。
 				 */
-				// TODO: 2023/11/21
-				String[] dependsOn = mbd.getDependsOn();
+				String[] dependsOn = mbd.getDependsOn();	// 注：获取当前合并bean定义的“depends-on”属性值
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
-						// 注：判断dep是否依赖于beanName，即是否构成循环依赖
+						// 注：判断dep是否依赖于beanName，即是否构成循环依赖；这种业务逻辑循环依赖无法解决。
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
@@ -398,7 +403,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
-							// 注：有可能找不到依赖bean的定义【在当前工厂内，意味着依赖关系只能在同一个工厂内】
+							// 注：有可能找不到依赖bean的定义【依赖关系可以不在同一个工厂内】
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"'" + beanName + "' depends on missing bean '" + dep + "'", ex);
 						}
@@ -407,7 +412,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				// 注：创建bean实例
+				/**
+				 * 注：下面将根据合并bean定义的作用域属性来进行bean实例的创建和初始化过程。
+				 * - 无论是哪种作用域，对于初始化后的bean实例都会调用getObjectForBeanInstance方法处理工厂bean的情况，这个在之前已经见到过。
+				 */
 				if (mbd.isSingleton()) {
+					/**
+					 * 注：创建单例bean的过程。
+					 * - 单例bean由DefaultSingletonBeanRegistry#getSingleton来进行。
+					 * - 单例bean本身的创建和实例化过程由AbstractAutowireCapableBeanFactory#createBean来进行。
+					 */
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
  							return createBean(beanName, mbd, args);

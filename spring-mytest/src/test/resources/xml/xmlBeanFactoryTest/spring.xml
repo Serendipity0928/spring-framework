@@ -7,6 +7,6 @@
 
 <!--	<myname:student id="testbean" name="dsa" age="12"/>-->
 
-	<bean id="testBean" class="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory"/>
+	<bean id="testBean" class="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory" depends-on="conversionService,conversionService" />
 
 </beans>

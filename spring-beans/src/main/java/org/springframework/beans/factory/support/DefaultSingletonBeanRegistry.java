@@ -255,14 +255,17 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * - 什么是原生？如果是工厂bean那就返回工厂bean
 	 * @param beanName the name of the bean
 	 * @param singletonFactory the ObjectFactory to lazily create the singleton
-	 * 注：用于延迟创建单例的对象工厂
-	 * - 为什么要封装bean的创建过程？创建失败后要跟着进行销毁动作。
 	 * with, if necessary
+	 * 注：用于延迟创建单例的对象工厂
+	 * - 为什么要封装bean的创建过程？
+	 *   因为单例bean的创建由DefaultSingletonBeanRegistry#getSingleton来进行。
+	 *   而实际bean实例的创建和初始化是个非常复杂的过程，由AbstractAutowireCapableBeanFactory#createBean来进行。
+	 *   创建单例bean的过程肯定要复用createBean能力，还要处理一些单例bean特有的逻辑，比如缓存单例bean，同步锁、回调、异常处理等。这些createBean是不负责处理的。
 	 * @return the registered singleton object
 	 */
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(beanName, "Bean name must not be null");
-		// 注：获取单例bean实例，对singletonObjects添加同步锁
+		// 注：获取单例bean实例，对singletonObjects添加同步锁【所有涉及单例bean的操作都是对this.singletonObjects加锁】
 		synchronized (this.singletonObjects) {
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
@@ -271,6 +274,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					/**
 					 * 注：获取到锁之后，还要检查当前是否处理销毁单例bean阶段；
 					 * （不允许在执行销毁方法时执行单例bean的创建，不然可能发生内存泄漏）
+					 * 【所以同步锁的处理不仅要关注到dcl以及第二次检查条件的处理，还要注意到异常可能带来的内存问题。】
 					 */
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +
@@ -284,12 +288,19 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				// 注：设置创建新单例bean表示（如果创建失败或者创建过程中bean实例已经存在，该值为false，就不需要缓存单例bean）
 				boolean newSingleton = false;
 				// 注：根据suppressedExceptions是否为null来判断是否要记录以及排除关联异常【疑问：什么情况下是非null？】
+				/**
+				 * 注：suppressedExceptions是用于缓存创建一系列依赖bean时出现异常后，可以抛出完整的bean创建异常链条信息，便于我们排查。
+				 * 依赖链上的异常集合由最开始的单例bean创建前初始化，逐层抛出后，也将由最开始单例bean捕捉到BeanCreationException后汇总抛出。
+				 * - 当前bean是否为最开始需要初始化的单例bean呢？就通过suppressedExceptions属性是否初始化了，未初始化(null)就是最初bean。
+				 * - 在最初bean抛出异常或返回之前，finally中都需要将suppressedExceptions属性重置为null。
+				 */
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
 				if (recordSuppressedExceptions) {
+					// 注：最初bean初始化异常集合，非最初bean不需要初始化
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
-					// 注：执行创建当前bean的回调方法【重点】
+					// 注：执行创建&初始化当前bean的回调方法【非常重点】
 					singletonObject = singletonFactory.getObject();
 					// 注：设置创建新的bean实例标识，后续会将该实例添加到单例缓存中
 					newSingleton = true;
@@ -297,13 +308,24 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				catch (IllegalStateException ex) {
 					// Has the singleton object implicitly appeared in the meantime ->
 					// if yes, proceed with it since the exception indicates that state.
-					// 注：有可能在运行时单例bean实例已经隐式创建了，如果已经创建就继续返回即可
+					/**
+					 * 注：有可能在运行时单例bean实例已经隐式创建了，如果已经创建就继续返回即可
+					 * 这里你可能存在很大的疑惑，前面不是已经将该beanName放置在正在创建bean的过程中么，而且还有缓存锁？为什么这里单例bean已经在单缓存中了？
+					 * 根据git记录，我大概清楚了这里是考虑可能在初始化工厂对象时，内部也隐式地创建了单例bean对象。这种情况下会抛出ImplicitlyAppearedSingletonException异常。
+					 * - 问题是解决了，但是我仍觉得此处真的是非常不好的代码组织方式。
+					 * 1. 单例bean创建过程中抛出IllegalStateException异常，到底算不算创建失败？这里好像大部分情况下算是成功的，成功的为什么要通过异常抛出来。
+					 * 	  本来非常清晰的单例bean创建流程，这里的异常处理我相信会让很多人摸不着头脑，实际上这里只是为了解决一个非常小的问题，却极大影响代码质量，得不偿失。
+					 * 2. 这里异常的处理，破坏了之前设计的异常集合汇总处理。
+					 * 	  试想如果创建流程内部抛出IllegalStateException异常，并且无法从单例缓存中获取实例。
+					 * 	  这里异常抛出后外层只能感知到内部bean的异常，根本不知道哪个业务bean依赖链路上依赖的这个内部bean。
+					 */
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {	// 注：如果没有单例bean，就抛出异常
 						throw ex;
 					}
 				}
 				catch (BeanCreationException ex) {
+					// TODO: 2023/11/23  
 					if (recordSuppressedExceptions) {
 						// 注：在创建bean时出现异常时，可能需要抛出压缩异常集合
 						for (Exception suppressedException : this.suppressedExceptions) {
