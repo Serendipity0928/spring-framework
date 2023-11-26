@@ -479,14 +479,14 @@ class ConstructorResolver {
 	 * bean definition parameter specifies a class, rather than a "factory-bean", or
 	 * an instance variable on a factory object itself configured using Dependency Injection.
 	 * 注：使用指定的工厂方法来创建一个bean实例。
-	 * 如果bean定义参数指定了一个类而不是工厂bean，或者用于依赖注入的自身配置的工厂对象变量，那么这个方法可能是一个静态方法。
+	 * 如果bean定义参数未指定工厂bean对象，或者使用依赖注入的工厂对象自身的属性变量，那么这个方法可能是一个静态方法。
 	 * <p>Implementation requires iterating over the static or instance methods with the
 	 * name specified in the RootBeanDefinition (the method may be overloaded) and trying
 	 * to match with the parameters. We don't have the types attached to constructor args,
 	 * so trial and error is the only way to go here. The explicitArgs array may contain
 	 * argument values passed in programmatically via the corresponding getBean method.
 	 * 注：该方法的是实现需要遍历定义在bean定义中的静态方法或者实例方法(方法也可能会被重载），并且试图去根据方法参数进行匹配。
-	 * 因为我们在构造器参数上没有携带类型信息，因此我们只能反复试错来匹配方法。
+	 * 因为我们在构造器参数(explicitArgs)上没有携带类型信息，因此我们只能反复试错来匹配方法。
 	 * 明确的参数值可能会通过响应的getBean方法传入过来。
 	 * @param beanName the name of the bean
 	 * @param mbd the merged bean definition for the bean
@@ -495,6 +495,7 @@ class ConstructorResolver {
 	 * @return a BeanWrapper for the new instance
 	 * 注：参考--> https://blog.csdn.net/qq_30321211/article/details/108350353、https://blog.51cto.com/u_15103026/2645274
 	 * https://www.jianshu.com/p/39edfa250e4e
+	 * 注：方法复杂，后续可总结一下
 	 */
 	public BeanWrapper instantiateUsingFactoryMethod(
 			String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
@@ -505,17 +506,21 @@ class ConstructorResolver {
 
 		// 注：如果存在工厂bean对象，就赋值到当前属性中
 		Object factoryBean;
-		// 注：如果存在工厂bean，就缓存其工厂类型
+		/**
+		 * 注：如果存在工厂bean，就缓存其工厂类型
+		 * - 对于工厂bean对象实例方法场景，该对象为工厂bean的类型
+		 * - 对于静态工厂方法场景，该对象为bean实例的类型。
+		 */
 		Class<?> factoryClass;
-		// 注：标识工厂方法是否为静态？
+		// 注：标识工厂方法是否为静态
 		boolean isStatic;
 
 		// 注：通过bean定义获取当前FactoryBean名称
 		String factoryBeanName = mbd.getFactoryBeanName();
 		if (factoryBeanName != null) {
-			// 注：存在factoryBean，则通过该工厂bean的实例方法来获取当前bean实例。
+			// 注：存在factoryBean，则通过指定factoryBean的实例方法来获取当前bean实例。
 			if (factoryBeanName.equals(beanName)) {
-				// 注：factoryBean名称与bean的名称不能一致，也即不能引向同一个bean定义【bean的factoryBean名不能是其本身，这个说法更好】
+				// 注：factoryBean名称与bean的名称不能一致，也即不能引向同一个bean定义【bean的factoryBean不能是其本身，这个说法更好】
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 						"factory-bean reference points back to the same bean definition");
 			}
@@ -538,7 +543,7 @@ class ConstructorResolver {
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 						"bean definition declares neither a bean class nor a factory-bean reference");
 			}
-			// 注：不存在工厂bean
+			// 注：不存在工厂bean对象
 			factoryBean = null;
 			// 注：工厂类型就是当前bean的类型
 			factoryClass = mbd.getBeanClass();
@@ -580,7 +585,7 @@ class ConstructorResolver {
 				}
 			}
 			if (argsToResolve != null) {
-				// 注：如果存在部分就绪的构造器参数，这里需要进一步解析，比如配置占位符解析、bean定义字符串解析以及类型转换。
+				// 注：如果存在部分就绪的构造器参数，这里需要进一步解析，比如自动装配、配置占位符解析、bean定义字符串解析以及类型转换。
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, factoryMethodToUse, argsToResolve, true);
 			}
 		}

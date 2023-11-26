@@ -7,6 +7,13 @@
 
 <!--	<myname:student id="testbean" name="dsa" age="12"/>-->
 
-	<bean id="testBean" class="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory" depends-on="conversionService,conversionService" />
+<!--	<bean id="student" class="com.spl.xml.xmlBeanFactoryTest.bean.Person" >-->
+<!--		<property name="name" value="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory" />-->
+<!--	</bean>-->
+
+	<bean id="testBean" class="com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory" >
+		<constructor-arg value="12"/>
+	</bean>
+
 
 </beans>

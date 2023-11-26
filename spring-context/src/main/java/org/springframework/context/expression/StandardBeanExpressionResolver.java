@@ -175,6 +175,7 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	 * <p>The default implementation is empty.
 	 */
 	protected void customizeEvaluationContext(StandardEvaluationContext evalContext) {
+		evalContext.setVariable("splname", "com.spl.xml.xmlBeanFactoryTest.factoryBean.StudentFactory");
 	}
 
 }

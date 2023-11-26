@@ -5,6 +5,16 @@ import org.springframework.beans.factory.FactoryBean;
 
 public class StudentFactory implements FactoryBean {
 
+	private int age;
+
+	public StudentFactory(String age) {
+		this.age = Integer.valueOf(age);
+	}
+
+	public StudentFactory(int age) {
+		this.age = age;
+	}
+
 	@Override
 	public Object getObject() throws Exception {
 		return new Student();

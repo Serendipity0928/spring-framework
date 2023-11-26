@@ -154,7 +154,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	final Object postProcessingLock = new Object();
 
 	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied.
-	 * 注：用于表示合并bean定义后置处理器是否已经处理
+	 * 注：用于表示合并bean定义后置处理器是否已经处理【处理阶段，实例化之后】
 	 * */
 	boolean postProcessed = false;
 

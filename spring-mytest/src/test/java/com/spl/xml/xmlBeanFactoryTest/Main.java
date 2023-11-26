@@ -1,13 +1,10 @@
 package com.spl.xml.xmlBeanFactoryTest;
 
-import com.spl.xml.xmlBeanFactoryTest.bean.MyTestBean;
-import com.spl.xml.xmlBeanFactoryTest.customEle.Student;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.xml.NamespaceHandler;
+import com.spl.xml.xmlBeanFactoryTest.bean.Person;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.ClassUtils;
 
 public class Main {
 
@@ -17,13 +14,10 @@ public class Main {
 
 //		System.setProperty("spl.tmp", "spl1.xml");
 
-		BeanFactory bf = new XmlBeanFactory(new ClassPathResource("xml/xmlBeanFactoryTest/spring.xml"));
+		AbstractBeanFactory bf = new XmlBeanFactory(new ClassPathResource("xml/xmlBeanFactoryTest/spring.xml"));
+
 //		Object bean = bf.getBean("&testBean");
 		Object bean1 = bf.getBean("testBean");
-//		Student bean = (Student) bf.getBean("testBean");
-//		System.out.println(bean.getName());
-//		System.out.println(bean.getId());
-//		System.out.println(bean.getAge());
 		System.out.println("??");
 	}
 

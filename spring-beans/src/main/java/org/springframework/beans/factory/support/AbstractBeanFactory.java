@@ -170,7 +170,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private volatile BeanPostProcessorCache beanPostProcessorCache;
 
-	/** Map from scope identifier String to corresponding Scope. */
+	/** Map from scope identifier String to corresponding Scope.
+	 * 注：缓存注册到工厂发内的作用域(Scope)处理类实例。
+	 * */
 	private final Map<String, Scope> scopes = new LinkedHashMap<>(8);
 
 	/** Security context used when running with a SecurityManager. */
@@ -189,7 +191,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
 	/** Names of beans that are currently in creation.
-	 * 注：用于缓存当前线程内正在创建bean的名称
+	 * 注：用于缓存当前线程内正在创建(非单例)bean的名称
+	 * - 如果当前只有一个正在创建的(非单例)bean，那该值为String类型
+	 * - 如果当前有多个正在创建的(非单例)bean，那么该值为Set<String>类型
 	 * */
 	private final ThreadLocal<Object> prototypesCurrentlyInCreation =
 			new NamedThreadLocal<>("Prototype beans currently in creation");
@@ -252,7 +256,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * 注：返回指定bean的实例(可能是单例或者原型)
 	 * @param name the name of the bean to retrieve // 注：要检索的bean名称
-	 * @param requiredType the required type of the bean to retrieve  // 注：要检索bean实例的类型
+	 * @param requiredType the required type of the bean to retrieve  // 注：要返回的bean实例类型
 	 * @param args arguments to use when creating a bean instance using explicit arguments
 	 * (only applied when creating a new instance as opposed to retrieving an existing one)
 	 * 注：当创建一个bean时通过该参数指定构造参数值。（仅仅当需要创建一个新实例而不是从缓存召回已经存在的bean时传入。意即正常创建bean是不会传入参数的）
@@ -439,41 +443,58 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							throw ex;
 						}
 					});
+					// 注：从已有的单例bean实例中获取name所指向的目标bean对象【如果当前单例bean是工厂bean，内部会生成目标bean】
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
+					// 注：对于原型bean实例的创建，这里直接创建一个新的实例即可；主要有由AbstractAutowireCapableBeanFactory#createBean来进行。
 					Object prototypeInstance = null;
 					try {
+						// 注：在创建原型实例之前的回调逻辑。默认实现将该bean名称缓存在线程上下文中
 						beforePrototypeCreation(beanName);
+						// 注：触发原型bean实例的创建；AbstractAutowireCapableBeanFactory#createBean
 						prototypeInstance = createBean(beanName, mbd, args);
 					}
 					finally {
+						// 注：在创建原型实例之后的回调逻辑。默认实现将该bean名称缓存从线程上下文中移除。
 						afterPrototypeCreation(beanName);
 					}
+					// 注：从已有的单例bean实例中获取name所指向的目标bean对象【如果当前单例bean是工厂bean，内部会生成目标bean】
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
 
 				else {
+					/**
+					 * 注：对于非单例、原型作用域之外，其余类型作用域需通过registerScope进行注册到工厂内。
+					 * 1. 根据bean定义的作用域来获取对应注册的Scope实例进行处理
+					 * 2. 调用Scope的get方法来获取实例；
+					 * 	  和单例bean-DefaultSingletonBeanRegistry类似，这里Scope只负责创建实例之外的处理，实际bean的创建逻辑还是由AbstractAutowireCapableBeanFactory#createBean来进行。
+					 */
 					String scopeName = mbd.getScope();
 					if (!StringUtils.hasLength(scopeName)) {
 						throw new IllegalStateException("No scope name defined for bean ´" + beanName + "'");
 					}
+					// 注：从已注册(registerScope)的作用域实例中获取当前作用域处理对象
 					Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
 						throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
 					}
 					try {
 						Object scopedInstance = scope.get(beanName, () -> {
+							// 注：非单例bean的创建前都需要添加到线程上下文缓存中。
 							beforePrototypeCreation(beanName);
 							try {
+								// 注：回调触发bean实例的创建；AbstractAutowireCapableBeanFactory#createBean
 								return createBean(beanName, mbd, args);
 							}
 							finally {
+								// 注：创建之后从线程上下文缓存中移除。
 								afterPrototypeCreation(beanName);
 							}
 						});
+						// 注：从已有的单例bean实例中获取name所指向的目标bean对象【如果当前单例bean是工厂bean，内部会生成目标bean】
 						bean = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
 					}
 					catch (IllegalStateException ex) {
@@ -489,12 +510,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Check if required type matches the type of the actual bean instance.
+		// 注：如果该方法传入了需要返回bean实例的类型-requiredType，这里会检查获取到的bean实例是否为该类型或其子类型。
 		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
+				// 注：通过自定义的或者默认(SimpleTypeConverter)的类型转换器，将上述实例化的bean实例转换为指定的类型。
 				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
 				if (convertedBean == null) {
+					// 注：转换结果为null(可能自定义转换不合理)，则抛出异常
 					throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
 				}
+				// 注：返回requiredType类型的bean实例
 				return convertedBean;
 			}
 			catch (TypeMismatchException ex) {
@@ -502,6 +527,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Failed to convert bean '" + name + "' to required type '" +
 							ClassUtils.getQualifiedName(requiredType) + "'", ex);
 				}
+				// 注：由于类型不匹配导致的类型转换异常
 				throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
 			}
 		}
@@ -1260,6 +1286,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Callback before prototype creation.
 	 * <p>The default implementation register the prototype as currently in creation.
+	 * 注：在(非单例)bean创建之前回调该函数。
+	 * - 默认的实现是将当前要创建的(非单例)bean名称缓存在线程上下文中
 	 * @param beanName the name of the prototype about to be created
 	 * @see #isPrototypeCurrentlyInCreation
 	 */
@@ -1267,15 +1295,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected void beforePrototypeCreation(String beanName) {
 		Object curVal = this.prototypesCurrentlyInCreation.get();
 		if (curVal == null) {
+			// 注：如果尚未存在正在创建的(非单例)bean缓存，则将该bean名称缓存起来
 			this.prototypesCurrentlyInCreation.set(beanName);
 		}
 		else if (curVal instanceof String) {
+			// 注：当前存在一个正在创建的bean，换成set缓存起来
 			Set<String> beanNameSet = new HashSet<>(2);
 			beanNameSet.add((String) curVal);
 			beanNameSet.add(beanName);
 			this.prototypesCurrentlyInCreation.set(beanNameSet);
 		}
 		else {
+			// 注：将当前bean名称缓存在线程上下文的(非单例)bean正在创建缓存中
 			Set<String> beanNameSet = (Set<String>) curVal;
 			beanNameSet.add(beanName);
 		}
@@ -1284,6 +1315,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Callback after prototype creation.
 	 * <p>The default implementation marks the prototype as not in creation anymore.
+	 * 注：(非单例)bean创建后的回调逻辑
+	 * - 默认实现上将该bean名称从线程上下文缓存中移除。
 	 * @param beanName the name of the prototype that has been created
 	 * @see #isPrototypeCurrentlyInCreation
 	 */
@@ -1765,7 +1798,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// 注：获取该工厂加载bean的类加载器
 		ClassLoader beanClassLoader = getBeanClassLoader();
 		/**
-		 * 为什么叫这个为动态类加载器呢？因为工厂可能有临时类加载器。
+		 * 注：为什么叫这个为动态类加载器呢？为什么不直接使用beanClassLoader？
+		 * 1. 如果当前仅用于类型匹配，对于织入场景，需要使用工厂中的临时类加载器。
+		 * 2. 如果当前className配置为spel表达式，动态解析后的类名可能每次都不同。这种情况也是使用动态类加载器加载。
 		 */
 		// 注：默认使用bean类加载器
 		ClassLoader dynamicLoader = beanClassLoader;
@@ -1797,20 +1832,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
-		// 注：获取bean定义的bean类名(bean类未加载的情况下返回null) 【这里是否不可能为Null?】
+		// 注：获取bean定义的bean类名(bean类未加载的情况下返回类名) 【这里是不可能为Null】
 		String className = mbd.getBeanClassName();
 		if (className != null) {
-			// 注：解析bean定义中的字符串【这里就是解析类名中可能存在的表达式】
+			// 注：解析bean定义中的字符串【这里就是解析类名中可能存在的spel表达式】
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
-				// 注：4.2版本后bean的类名支持动态解析表达式
-				if (evaluated instanceof Class) { // 注：如果直接解析为类对象，返回！
+				/**
+				 * 注：4.2版本后bean的类名支持动态解析表达式
+				 * spel表达式解析属于动态解析，因此解析后如果是Class类型，就直接返回；如果是String类型的类名，就重新加载(bean类型可能存在动态变化)。
+				 */
+				if (evaluated instanceof Class) { // 注：如果spel直接解析为类对象，返回！
 					return (Class<?>) evaluated;
 				}
-				else if (evaluated instanceof String) {	// 注：解析后的类名
+				else if (evaluated instanceof String) {	// 注：spel解析后的类名
 					className = (String) evaluated;
-					freshResolve = true;		// 注：需要重新刷新加载
+					// 注：spel动态解析的类型，需要重新刷新加载；重新加载是不会缓存到bean定义中。
+					freshResolve = true;
 				}
 				else {
 					throw new IllegalStateException("Invalid class name expression result: " + evaluated);
@@ -1821,7 +1860,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// to avoid storing the resolved Class in the bean definition.
 				/**
 				 * 注：需要重新加载beanClass时，需要注意的就是，如果我们使用临时类加载器加载，就不需要存储在bean定义中。
-				 * - 重新加载的class均不会存储在bean定义中
+				 * - 重新加载的class均不会存储在bean定义中，以便于后续bean类型可能存在变化。
+				 * - 后续：类加载器的loadClass和forName区别呢
 				 */
 				if (dynamicLoader != null) {
 					try {
@@ -1841,8 +1881,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Resolve regularly, caching the result in the BeanDefinition...
 		/**
-		 * 注：定义重新解析，并将加载的结果缓存的bean定义中。
-		 * 疑问：这是啥意思？className这里为null,resolveBeanClass方法肯定会返回null呀...
+		 * 注：根据bean定义中的类名解析类型，并将加载的结果缓存的bean定义中。
 		 */
 		return mbd.resolveBeanClass(beanClassLoader);
 	}
@@ -1856,6 +1895,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param beanDefinition the bean definition that the value comes from
 	 * @return the resolved value
 	 * @see #setBeanExpressionResolver
+	 * 注：参考--> https://blog.csdn.net/qq_30321211/article/details/108345288
 	 */
 	@Nullable
 	protected Object evaluateBeanDefinitionString(@Nullable String value, @Nullable BeanDefinition beanDefinition) {
@@ -1864,7 +1904,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			return value;
 		}
 
-		// TODO: 2023/10/23  https://blog.csdn.net/qq_30321211/article/details/108345288
 		// 注：获取bean定义作用范围Scope对象
 		Scope scope = null;
 		if (beanDefinition != null) {
@@ -2089,15 +2128,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Remove the singleton instance (if any) for the given bean name,
 	 * but only if it hasn't been used for other purposes than type checking.
+	 * 注：移除指定bean名称的单例对象，但是前提是该对象没有用于除类型校验之外的其他使用目的。
 	 * @param beanName the name of the bean
 	 * @return {@code true} if actually removed, {@code false} otherwise
 	 */
 	protected boolean removeSingletonIfCreatedForTypeCheckOnly(String beanName) {
 		if (!this.alreadyCreated.contains(beanName)) {
+			// 注：非标准化流程，仅用于类型校验
 			removeSingleton(beanName);
 			return true;
 		}
 		else {
+			// 注：this.alreadyCreated缓存的是spring标准创建Bean流程，非类型检查。
 			return false;
 		}
 	}
@@ -2321,11 +2363,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * The bean definition will already have been merged with the parent definition
 	 * in case of a child definition.
 	 * <p>All bean retrieval methods delegate to this method for actual bean creation.
+	 * 注：根据给定的合并后的bean定义以及参数(可能存在)创建一个bean实例。
+	 * - 这里的bean定义为已经合并后的bean定义。
+	 * - 所有需要从bean工厂获取bean实例的方法都会通过该方法来实际创建bean实例。
+	 * - 目前该方法只有AbstractAutowireCapableBeanFactory#createBean实现。
 	 * @param beanName the name of the bean
 	 * @param mbd the merged bean definition for the bean
 	 * @param args explicit arguments to use for constructor or factory method invocation
 	 * @return a new instance of the bean
 	 * @throws BeanCreationException if the bean could not be created
+	 * @see AbstractAutowireCapableBeanFactory#createBean(String, RootBeanDefinition, Object[])
 	 */
 	protected abstract Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException;

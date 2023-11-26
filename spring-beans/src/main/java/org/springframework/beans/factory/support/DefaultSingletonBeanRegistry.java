@@ -148,13 +148,16 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * Add the given singleton object to the singleton cache of this factory.
 	 * <p>To be called for eager registration of singletons.
 	 * 注：将指定的单例bean实例添加到单例bean缓存中
-	 * - 用于早期单例的注册(疑问???)
 	 * @param beanName the name of the bean
 	 * @param singletonObject the singleton object
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
-			// 加入到单例缓存池中
+			/**
+			 * 注：将已创建的单例bean实例添加到单例缓存池中
+			 * - 既然bean实例已经存在了，顺便会清空二级、三级缓存。
+			 * - 添加已注册单例bean缓存
+			 */
 			this.singletonObjects.put(beanName, singletonObject);
 			this.singletonFactories.remove(beanName);
 			this.earlySingletonObjects.remove(beanName);
@@ -215,7 +218,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * Q2：为什么要三级缓存，直接要二级缓存不行吗？
 	 * 从两个方面考虑：
 	 * 	 1. 通过getEarlyBeanReference方法，执行了后置处理器
-	 * 	 2. 有些情况下是不需要获取缓存中的对象，也更不需要获取早期对象，比如原型bean(以原型bean为例)
+	 * 	 2. 【重要】三级缓存解决了早期引用后续可能会被覆盖的问题。即在后续初始化时，可能后置处理器返回了不同于早期引用的其他对象，如代理对象。
+	 * 	 3. 有些情况下是不需要获取缓存中的对象，也更不需要获取早期对象，比如原型bean(以原型bean为例)
 	 * 	 	用户获取bean实例时，只会传入bean的名称，此时根本不知道是否为单例bean，如果获取了早期对象，就破坏了原型模式
 	 * 	 	如果在先合并bean定义后再判断是否需要从缓存中获取，就可能会影响性能了，因为设计父子bean定义还需要合并。
 	 * 	    因此，在bean创建后，初始化前，就会判断是否需要暴露单例bean的早期引用对象，允许则先存在三级缓存中。
@@ -325,7 +329,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					}
 				}
 				catch (BeanCreationException ex) {
-					// TODO: 2023/11/23  
+					// 注：如果在创建bean实例的时候出现异常，逐层抛出，并在最外层一起抛给外层
 					if (recordSuppressedExceptions) {
 						// 注：在创建bean时出现异常时，可能需要抛出压缩异常集合
 						for (Exception suppressedException : this.suppressedExceptions) {
@@ -336,7 +340,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				}
 				finally {
 					if (recordSuppressedExceptions) {
-						// 注：如果创建实例之前初始化了压缩异常列表，这里重置以便下一次创建实例使用
+						// 注：无论是成功还是异常，最初bean创建结束后，这里都需要重置异常集合，以便下一个bean创建流程使用
 						this.suppressedExceptions = null;
 					}
 					// 注：：单例bean创建之后的回调；（默认用于将当前bean名称从正在创建bean名称缓存中去除）
@@ -347,7 +351,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					 * 注：如果成功创建了单例bean实例，就将该实例
 					 * 1. 添加到单例bean缓存中
 					 * 2. 将该bean从二、三级缓存中移除
-					 * 3. 将该bean从已注册缓存中移除
+					 * 3. 将该bean名称添加到从已注册缓存中
 					 */
 					addSingleton(beanName, singletonObject);
 				}
@@ -666,6 +670,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/**
 	 * Destroy the given bean. Delegates to {@code destroyBean}
 	 * if a corresponding disposable bean instance is found.
+	 * 注：
 	 * @param beanName the name of the bean
 	 * @see #destroyBean
 	 */

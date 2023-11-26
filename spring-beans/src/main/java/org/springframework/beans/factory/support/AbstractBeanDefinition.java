@@ -882,6 +882,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * potential annotation-driven injection will still apply as usual.
 	 * 注：如果设置了当前回调逻辑，它将覆盖任何其他构造器或者工厂方法元数据。
 	 * 然而，bean属性填充以及隐式注解驱动不受影响。
+	 * @see AbstractAutowireCapableBeanFactory#createBeanInstance(String, RootBeanDefinition, Object[])
 	 * @since 5.0
 	 * @see #setConstructorArgumentValues(ConstructorArgumentValues)
 	 * @see #setPropertyValues(MutablePropertyValues)
