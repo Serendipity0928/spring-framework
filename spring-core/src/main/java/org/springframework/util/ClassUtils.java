@@ -541,6 +541,7 @@ public abstract class ClassUtils {
 		Assert.notNull(lhsType, "Left-hand side type must not be null");
 		Assert.notNull(rhsType, "Right-hand side type must not be null");
 		if (lhsType.isAssignableFrom(rhsType)) {
+			// 注：lhsType是rhsType的父类或接口
 			return true;
 		}
 		if (lhsType.isPrimitive()) {
@@ -563,6 +564,7 @@ public abstract class ClassUtils {
 	 */
 	public static boolean isAssignableValue(Class<?> type, @Nullable Object value) {
 		Assert.notNull(type, "Type must not be null");
+		// 注：type是否为value类型的父类型
 		return (value != null ? isAssignable(type, value.getClass()) : !type.isPrimitive());
 	}
 

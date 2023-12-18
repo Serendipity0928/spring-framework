@@ -358,6 +358,7 @@ public abstract class StringUtils {
 	/**
 	 * Test whether the given string matches the given substring
 	 * at the given index.
+	 * 测试是否指定的字符串是否在指定索引处匹配指定的子字符串
 	 * @param str the original string (or StringBuilder)
 	 * @param index the index in the original string to start matching against
 	 * @param substring the substring to match at the given index

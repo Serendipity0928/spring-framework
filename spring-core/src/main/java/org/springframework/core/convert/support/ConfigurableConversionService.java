@@ -27,6 +27,9 @@ import org.springframework.core.convert.converter.ConverterRegistry;
  * Converters} through. The latter is particularly useful when working against a
  * {@link org.springframework.core.env.ConfigurableEnvironment ConfigurableEnvironment}
  * instance in application context bootstrapping code.
+ * 注：配置型转换服务接口几乎会被所有ConversionService子类型所实现。
+ * 该接口结合ConversionService接口提供的仅读操作，以及由ConverterRegistry接口提供的可变操作，允许十分方便的点对点的增加或移除类型转换器。
+ * 这一点在应用上下文启动过程中可配置环境场景下十分有用。
  *
  * @author Chris Beams
  * @since 3.1

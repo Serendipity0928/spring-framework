@@ -78,6 +78,8 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	/**
 	 * Create a new ClassPathXmlApplicationContext, loading the definitions
 	 * from the given XML file and automatically refreshing the context.
+	 * 注：创建一个ClassPathXmlApplicationContext实例。
+	 * 从指定的xml配置文件中加载bean定义，并且自动刷新当前上下文
 	 * @param configLocation resource location
 	 * @throws BeansException if context creation failed
 	 */
@@ -126,10 +128,15 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	/**
 	 * Create a new ClassPathXmlApplicationContext with the given parent,
 	 * loading the definitions from the given XML files.
+	 * 注：创建一个ClassPathXmlApplicationContext实例。
+	 * 从指定的xml配置文件中加载bean定义，并且自动刷新当前上下文
 	 * @param configLocations array of resource locations
 	 * @param refresh whether to automatically refresh the context,
 	 * loading all bean definitions and creating all singletons.
 	 * Alternatively, call refresh manually after further configuring the context.
+	 * 注：是否自动刷新当前上下文。
+	 * - 自动加载所有bean定义并且触发非懒加载的单例bean的初始化。
+	 * - 或者你也可以在后续对当前上下文进行配置时手动调用refresh方法
 	 * @param parent the parent context
 	 * @throws BeansException if context creation failed
 	 * @see #refresh()

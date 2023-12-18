@@ -22,12 +22,15 @@ import java.util.Properties;
 /**
  * {@link PropertySource} implementation that extracts properties from a
  * {@link java.util.Properties} object.
+ * 注：用于从Properties对象中抽取属性的属性源实现类
  *
  * <p>Note that because a {@code Properties} object is technically an
  * {@code <Object, Object>} {@link java.util.Hashtable Hashtable}, one may contain
  * non-{@code String} keys or values. This implementation, however is restricted to
  * accessing only {@code String}-based keys and values, in the same fashion as
  * {@link Properties#getProperty} and {@link Properties#setProperty}.
+ * 注：由于Properties的底层实现是<Object，Object>映射的Hashtable类型，其中可能会包括非String类型的key或者value。
+ * 然而，当前属性源实现限制仅允许基于String类型访问对应的key以及value，实现上与getProperty、setProperty相同。
  *
  * @author Chris Beams
  * @author Juergen Hoeller

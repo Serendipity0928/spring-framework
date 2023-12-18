@@ -21,6 +21,8 @@ import org.springframework.lang.Nullable;
 /**
  * {@link PropertyResolver} implementation that resolves property values against
  * an underlying set of {@link PropertySources}.
+ * 注：针对于任何底层属性源解析属性的具体实现类。
+ * - PropertySourcesPropertyResolver：属性源-属性解析器
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -31,12 +33,14 @@ import org.springframework.lang.Nullable;
  */
 public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 
+	// 注：持有的属性源对象
 	@Nullable
 	private final PropertySources propertySources;
 
 
 	/**
 	 * Create a new resolver against the given property sources.
+	 * 注：根据指定的属性源创建一个属性解析器
 	 * @param propertySources the set of {@link PropertySource} objects to use
 	 */
 	public PropertySourcesPropertyResolver(@Nullable PropertySources propertySources) {
@@ -44,11 +48,13 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 	}
 
 
+	// 注：返回属性源对象是否包含给定的属性名
 	@Override
 	public boolean containsProperty(String key) {
 		if (this.propertySources != null) {
 			for (PropertySource<?> propertySource : this.propertySources) {
 				if (propertySource.containsProperty(key)) {
+					// 注：只要有一个属性源包含该属性即返回true
 					return true;
 				}
 			}
@@ -56,24 +62,29 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 		return false;
 	}
 
+	// 注：返回指定属性key对应的解析值-String。
 	@Override
 	@Nullable
 	public String getProperty(String key) {
 		return getProperty(key, String.class, true);
 	}
 
+	// 注：返回指定属性key对应的解析值-指定类。
 	@Override
 	@Nullable
 	public <T> T getProperty(String key, Class<T> targetValueType) {
 		return getProperty(key, targetValueType, true);
 	}
 
+	// 注：检索指定的属性值，原始字符串类型-未处理嵌套的占位符；
 	@Override
 	@Nullable
 	protected String getPropertyAsRawString(String key) {
+		// 注：注意这里传入的resolveNestedPlaceholders参数为false
 		return getProperty(key, String.class, false);
 	}
 
+	// 注：实际属性解析的方法
 	@Nullable
 	protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolveNestedPlaceholders) {
 		if (this.propertySources != null) {
@@ -82,12 +93,15 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 					logger.trace("Searching for key '" + key + "' in PropertySource '" +
 							propertySource.getName() + "'");
 				}
+				// 注：获取属性源的属性值
 				Object value = propertySource.getProperty(key);
 				if (value != null) {
 					if (resolveNestedPlaceholders && value instanceof String) {
+						// 注：如果属性值存在，返回的是字符串类型，且需要解析嵌套的占位符，调用resolveNestedPlaceholders方法解析字符串中的占位符。
 						value = resolveNestedPlaceholders((String) value);
 					}
 					logKeyFound(key, propertySource, value);
+					// 注：如果有需要的情况下，通过转换服务将解析后的属性值转换为指定目标类型。
 					return convertValueIfNecessary(value, targetValueType);
 				}
 			}
@@ -101,6 +115,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 	/**
 	 * Log the given key as found in the given {@link PropertySource}, resulting in
 	 * the given value.
+	 * 注：日志记录从属性源中找到的属性值
 	 * <p>The default implementation writes a debug log message with key and source.
 	 * As of 4.3.3, this does not log the value anymore in order to avoid accidental
 	 * logging of sensitive settings. Subclasses may override this method to change

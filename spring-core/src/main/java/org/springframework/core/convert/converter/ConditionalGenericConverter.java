@@ -21,8 +21,10 @@ import org.springframework.core.convert.TypeDescriptor;
 /**
  * A {@link GenericConverter} that may conditionally execute based on attributes
  * of the {@code source} and {@code target} {@link TypeDescriptor}.
+ * 注：通用类型转换器可能会基于源、目标类型信息来条件性的执行。
  *
  * <p>See {@link ConditionalConverter} for details.
+ * 注：查看条件性转换器的详细说明
  *
  * @author Keith Donald
  * @author Phillip Webb

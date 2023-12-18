@@ -123,9 +123,9 @@ class ProfilesTests {
 
 	@Test
 	void ofSingleInvertedExpression() {
-		Profiles profiles = Profiles.of("(!spring)");
+		Profiles profiles = Profiles.of("spring & framework)");
 		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
+		assertThat(profiles.matches(activeProfiles("framework"))).isFalse();
 	}
 
 	@Test

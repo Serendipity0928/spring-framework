@@ -306,7 +306,7 @@ public class ResolvableType implements Serializable {
 	/**
 	 * Determine whether this {@code ResolvableType} is assignable from the
 	 * specified other type.
-	 * 注：判断当前ResolvableType子类是否是指定ResolvableType类的子类型
+	 * 注：判断当前ResolvableType是否是指定ResolvableType类的子类型
 	 * <p>Attempts to follow the same rules as the Java compiler, considering
 	 * whether both the {@link #resolve() resolved} {@code Class} is
 	 * {@link Class#isAssignableFrom(Class) assignable from} the given type
