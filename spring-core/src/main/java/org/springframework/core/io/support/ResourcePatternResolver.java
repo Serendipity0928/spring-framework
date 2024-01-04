@@ -33,25 +33,29 @@ import org.springframework.core.io.ResourceLoader;
  * can be checked whether it implements this extended interface too.
  * 注：ResourcePatternResolver是ResourceLoader的子接口。
  * 使用ResourceLoaderAware注入传入的ResourceLoader参数可以检查是否实现了当前接口。
+ * - ResourceLoader：将指定路径加载为Resource资源句柄
+ * - ResourcePatternResolver：将指定字符串解析资源路径，然后加载资源，返回资源句柄数组。
  *
  * <p>{@link PathMatchingResourcePatternResolver} is a standalone implementation
  * that is usable outside an ApplicationContext, also used by
  * {@link ResourceArrayPropertyEditor} for populating Resource array bean properties.
  * 注：除了上下文均实现了该接口，spring还提供了两个独立的实现类：
  * PathMatchingResourcePatternResolver可以脱离上下文实例使用。
- * ResourceArrayPropertyEditor可以将资源路径转换为资源数组(Resource[])。
+ * 为了填充资源数组类型的bean属性值，ResourceArrayPropertyEditor可以将资源路径转换为资源数组(Resource[])。
  *
  * <p>Can be used with any sort of location pattern (e.g. "/WEB-INF/*-context.xml"):
  * Input patterns have to match the strategy implementation. This interface just
  * specifies the conversion method rather than a specific pattern format.
- * 注：该接口可以用于任何资源路径样式的解析。但是接口仅仅定义了转换方法，具体的输入样式还需要匹配具体的实现类。
+ * 注：该接口可以用于任何资源路径样式的解析，比如"/WEB-INF/*-context.xml"。
+ * 但是接口仅仅定义了转换方法而没有给出具体的样式格式，具体的输入样式还需要匹配具体的实现类。
  *
  * <p>This interface also suggests a new resource prefix "classpath*:" for all
  * matching resources from the class path. Note that the resource location is
  * expected to be a path without placeholders in this case (e.g. "/beans.xml");
  * JAR files or classes directories can contain multiple files of the same name.
- * 注：此接口还建议使用一个新的资源前缀：'classpath*:'，需要注意的是这种情况下不允许使用占位符。
- * Jar文件或者类目录可能包含多个同名文件资源。
+ * 注：此接口还推荐使用一个新的资源前缀：'classpath*:'，用于匹配所有类路径下匹配的资源，
+ * - 需要注意的是这种情况下不允许使用占位符。
+ * - Jar文件或者类目录可能包含多个同名文件资源。
  *
  * @author Juergen Hoeller
  * @since 1.0.2
@@ -67,6 +71,8 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * This differs from ResourceLoader's classpath URL prefix in that it
 	 * retrieves all matching resources for a given name (e.g. "/beans.xml"),
 	 * for example in the root of all deployed JAR files.
+	 * 注：用于匹配所有类路径下资源的伪URL前缀。
+	 * - 当前路径区别于在ResourceLoader中定义的类路径前缀，它会检索指定名称所有匹配的资源句柄，比如在所有部署jar文件的根目录中。
 	 * @see org.springframework.core.io.ResourceLoader#CLASSPATH_URL_PREFIX
 	 */
 	String CLASSPATH_ALL_URL_PREFIX = "classpath*:";
@@ -77,6 +83,8 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * resource should be avoided, as far as possible. The result should
 	 * have set semantics.
 	 * 注：解析给定的路径匹配样式，返回资源对象列表
+	 * - 应尽可能避免返回重复的指向同一物理资源的资源句柄。
+	 * - 结果会针对Resource进行去重。
 	 * @param locationPattern the location pattern to resolve
 	 * @return the corresponding Resource objects
 	 * @throws IOException in case of I/O errors

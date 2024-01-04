@@ -29,8 +29,10 @@ import org.springframework.lang.Nullable;
 
 /**
  * {@link PathMatcher} implementation for Ant-style path patterns.
+ * 注：用于Ant样式路径模式的路径匹配器。
  *
  * <p>Part of this mapping code has been kindly borrowed from <a href="https://ant.apache.org">Apache Ant</a>.
+ * 注：当前部分匹配代码借用自Apache Ant
  *
  * <p>The mapping matches URLs using the following rules:<br>
  * <ul>
@@ -39,6 +41,11 @@ import org.springframework.lang.Nullable;
  * <li>{@code **} matches zero or more <em>directories</em> in a path</li>
  * <li>{@code {spring:[a-z]+}} matches the regexp {@code [a-z]+} as a path variable named "spring"</li>
  * </ul>
+ * 注：URL的映射匹配遵循以下规则：
+ * - ‘?’：匹配一个字符
+ * - ‘*’：匹配零个或更多字符
+ * - ‘**’：匹配零个或更多路径目录
+ * - ‘{spring:[a-z]+}’：用于正则匹配，且将匹配结果作为spring变量的值。
  *
  * <h3>Examples</h3>
  * <ul>
@@ -56,11 +63,21 @@ import org.springframework.lang.Nullable;
  * <li>{@code com/{filename:\\w+}.jsp} will match {@code com/test.jsp} and assign the value {@code test}
  * to the {@code filename} variable</li>
  * </ul>
+ * 注：示例如下：
+ * 1. “com/t?st.jsp”：匹配“com/test.jsp”，也会匹配“com/tast.jsp”或者“com/txst.jsp”
+ * 2. “com/*.jsp”：匹配所有在com目录下的jsp文件路径。
+ * 3. “com/&#42;&#42;/test.jsp”：匹配所有在com目录及其子目录下的test.jsp文件
+ * 4. “org/springframework/&#42;&#42;/*.jsp”：匹配所有在“org/springframework/”及其子目录下的jsp文件
+ * 5. “org/&#42;&#42;/servlet/bla.jsp”：能匹配"org/springframework/servlet/bla.jsp"，也能匹配"org/springframework/testing/servlet/bla.jsp",
+ * 		也能匹配“org/servlet/bla.jsp”
+ * 6. “com/{filename:\\w+}.jsp”：将会匹配“com/test.jsp”并且将“test”值赋值给“filename”变量。
  *
  * <p><strong>Note:</strong> a pattern and a path must both be absolute or must
  * both be relative in order for the two to match. Therefore it is recommended
  * that users of this implementation to sanitize patterns in order to prefix
  * them with "/" as it makes sense in the context in which they're used.
+ * 注：一个样式以及一个全路径为了互相匹配，二者必须均为绝对路径，或者二者均为相对路径。
+ * 因此，建议当前路径匹配器的使用者检查路径样式，以便在样式前加上“/”，因为这在使用它们的上下文中是有意义的。
  *
  * @author Alef Arendsen
  * @author Juergen Hoeller
