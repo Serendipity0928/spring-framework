@@ -204,6 +204,7 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	/**
 	 * {@inheritDoc}
 	 * <p>Replace {@code Servlet}-related property sources.
+	 * 注：Web场景，通过上下文刷新流程的扩展，替换环境中实际的Servlet相关属性源。
 	 */
 	@Override
 	protected void initPropertySources() {

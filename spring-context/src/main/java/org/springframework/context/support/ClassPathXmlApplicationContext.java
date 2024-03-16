@@ -145,9 +145,12 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
 
+		// 注：① 初始化基本属性(比如资源路径样式解析器)，以及支持父应用上下文。
 		super(parent);
+		// 注：② 设置上下文配置资源路径--由AbstractRefreshableConfigApplicationContext支持。
 		setConfigLocations(configLocations);
 		if (refresh) {
+			// 注：③ 开始执行上下文刷新流程--定义在AbstractApplicationContext中
 			refresh();
 		}
 	}

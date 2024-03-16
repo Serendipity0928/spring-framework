@@ -252,8 +252,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	private Thread shutdownHook;
 
 	/** ResourcePatternResolver used by this context.
-	 * 注：spring上下文中的资源路径样式解析器
-	 * // TODO: 2023/10/8 疑问：Resolver和ResourceLoader的关系是什么？装饰？
+	 * 注：spring上下文中的资源路径样式解析器（这是抽象应用上下文中唯一必须的属性）
+	 * - 疑问：resourcePatternResolver和ResourceLoader的关系是什么？装饰？
+	 *   答：是装饰的关系。resourcePatternResolver通过装饰ResourceLoader添加了样式路径匹配出多个资源加载的能力。
+	 *   	 抽象应用上下文继承了DefaultResourceLoader类已经实现了(单)资源加载的能力，这里通过resourcePatternResolver实现样式路径多资源加载的能力。
 	 */
 	private ResourcePatternResolver resourcePatternResolver;
 
@@ -299,8 +301,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * 注：创建一个没有父应用的应用上下文对象
 	 */
 	public AbstractApplicationContext() {
-		// 初始化资源路径解析器
-		// 【getResourcePatternResolver是一个模版方法模式的体现，默认为PathMatchingResourcePatternResolver，可由子类实现】
+		/**
+		 * 注：初始化资源路径样式解析器
+		 * - getResourcePatternResolver是一个模版方法，支持子类自定义该解析器，
+		 * - 默认为PathMatchingResourcePatternResolver，支持Ant路径样式解析(可解析为多个资源句柄，详见getResources方法)。
+		 */
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
@@ -741,8 +746,17 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
-		/* 注: 初始化上下文环境中任意占位符配置源，AAC中是一个protected空方法，子类可以进行设置自定义个性化属性
-		* 使用场景：在分布式配置中心会使用这个点实现 */
+		/**
+		 * 注: 初始化上下文环境中任意占位配置源。
+		 * - AAC中是一个protected空方法，子类可以进行设置自定义个性化属性源。
+		 * - 这里的方法名称的设置存在争议。
+		 * 	 - 初始化属性源是Environment类实例所负责，即便是自定义个性化（初始）属性源也是自定义Environment类型，比如StandardServletEnvironment
+		 * 	 - 这里实际上做的事情是将Environment实例中起到占位符作用的属性源进行初始化并替换。initAndReplaceStubPropertySources
+		 * - 什么叫占位属性源？
+		 *   - 在某些上下文场景中(比如web)，其依赖的属性源无法保证在Environment实例化之前准备就绪，
+		 *     因此Environment实例就无法初始化该数据源，只能先通过占位符替代。比如Web场景下依赖servletConfig配置准备就绪。
+		 *     在Web上下文初始化之前，可能已经实例化Environment实例，并在web上下文刷新时，这里会根据servletConfig配置来替换为实际的Servlet配置数据源。
+		 */
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
@@ -769,7 +783,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * <p>Replace any stub property sources with actual instances.
-	 * 注：使用实际实例替换属性源【引用Web项目】
+	 * 注：初始化上下文环境中任意占位属性配置源。
+	 * - 在普通上下文场景中，不存在也不需要替换占位符属性源
+	 * - 在Web场景中，这里会初始化并替换为实际的Servlet属性源。
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
 	 * // @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
 	 */
