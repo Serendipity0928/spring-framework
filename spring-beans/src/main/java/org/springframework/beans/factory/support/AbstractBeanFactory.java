@@ -89,6 +89,7 @@ import org.springframework.util.StringValueResolver;
  * Does <i>not</i> assume a listable bean factory: can therefore also be used
  * as base class for bean factory implementations which obtain bean definitions
  * from some backend resource (where bean definition access is an expensive operation).
+ * 注：AbstractBeanFactory是bean工厂基本抽象类实现，提供了ConfigurableBeanFactory接口全部能力。
  *
  * <p>This class provides a singleton cache (through its base class
  * {@link org.springframework.beans.factory.support.DefaultSingletonBeanRegistry},

@@ -8,4 +8,7 @@
 		<property name="age" value="1"/>
 	</bean>
 
+	<bean id="postConstruct" class="com.spl.context.pojo.PostConstructTest">
+	</bean>
+
 </beans>

@@ -67,9 +67,11 @@ public interface ListableBeanFactory extends BeanFactory {
 
 	/**
 	 * Check if this bean factory contains a bean definition with the given name.
+	 * 注：检查当前bean工厂是否包含指定名称的bean
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 注：不考虑父级工厂，并且忽略任何通过非bean定义方式注册进来的单例bean
 	 * @param beanName the name of the bean to look for
 	 * @return if this bean factory contains a bean definition with the given name
 	 * @see #containsBean
@@ -78,18 +80,22 @@ public interface ListableBeanFactory extends BeanFactory {
 
 	/**
 	 * Return the number of beans defined in the factory.
+	 * 注：返回定义在当前工厂的bean数量
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 注：不考虑父级工厂，并且忽略任何通过非bean定义方式注册进来的单例bean
 	 * @return the number of beans defined in the factory
 	 */
 	int getBeanDefinitionCount();
 
 	/**
 	 * Return the names of all beans defined in this factory.
+	 * 注：返回定义在当前工厂的所有bean的名称
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 注：不考虑父级工厂，并且忽略任何通过非bean定义方式注册进来的单例bean
 	 * @return the names of all beans defined in this factory,
 	 * or an empty array if none defined
 	 */
@@ -99,6 +105,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * Return the names of beans matching the given type (including subclasses),
 	 * judging from either bean definitions or the value of {@code getObjectType}
 	 * in the case of FactoryBeans.
+	 * 注：返回匹配指定类型的所有bean名称。要么通过bean定义判断，要么通过FactoryBean的getObjectType方法判断。
 	 * <p><b>NOTE: This method introspects top-level beans only.</b> It does <i>not</i>
 	 * check nested beans which might match the specified type as well.
 	 * <p>Does consider objects created by FactoryBeans, which means that FactoryBeans
@@ -128,6 +135,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * Return the names of beans matching the given type (including subclasses),
 	 * judging from either bean definitions or the value of {@code getObjectType}
 	 * in the case of FactoryBeans.
+	 * 注：返回匹配指定类型的所有bean名称。要么通过bean定义判断，要么通过FactoryBean的getObjectType方法判断。
 	 * <p><b>NOTE: This method introspects top-level beans only.</b> It does <i>not</i>
 	 * check nested beans which might match the specified type as well.
 	 * <p>Does consider objects created by FactoryBeans if the "allowEagerInit" flag is set,
@@ -189,6 +197,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * Return the names of beans matching the given type (including subclasses),
 	 * judging from either bean definitions or the value of {@code getObjectType}
 	 * in the case of FactoryBeans.
+	 * 注：返回匹配指定类型的所有bean名称。要么通过bean定义判断，要么通过FactoryBean的getObjectType方法判断。
 	 * <p><b>NOTE: This method introspects top-level beans only.</b> It does <i>not</i>
 	 * check nested beans which might match the specified type as well.
 	 * <p>Does consider objects created by FactoryBeans if the "allowEagerInit" flag is set,

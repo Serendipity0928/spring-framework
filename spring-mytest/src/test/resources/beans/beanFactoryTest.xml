@@ -6,6 +6,8 @@
 	   http://www.lexueba.com/schema/student http://www.lexueba.com/schema/student.xsd">
 
 		<bean id="test" class="com.spl.beans.domain.TestBean" >
-			<property name="msg" value="TestBeanMsg" />
+<!--			<property name="msg" value="TestBeanMsg" />-->
 		</bean>
+
+
 </beans>

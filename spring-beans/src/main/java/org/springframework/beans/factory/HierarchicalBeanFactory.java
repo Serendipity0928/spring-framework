@@ -38,6 +38,7 @@ public interface HierarchicalBeanFactory extends BeanFactory {
 
 	/**
 	 * Return the parent bean factory, or {@code null} if there is none.
+	 * 注：返回父工厂
 	 */
 	@Nullable
 	BeanFactory getParentBeanFactory();
@@ -45,8 +46,10 @@ public interface HierarchicalBeanFactory extends BeanFactory {
 	/**
 	 * Return whether the local bean factory contains a bean of the given name,
 	 * ignoring beans defined in ancestor contexts.
+	 * 注：返回当前工厂是否包含指定名称的bean实例，忽略父工厂
 	 * <p>This is an alternative to {@code containsBean}, ignoring a bean
 	 * of the given name from an ancestor bean factory.
+	 * 注：这是一个忽略父工厂的containsBean方法的替代方案
 	 * @param name the name of the bean to query
 	 * @return whether a bean with the given name is defined in the local factory
 	 * @see BeanFactory#containsBean

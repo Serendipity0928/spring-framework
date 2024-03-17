@@ -514,8 +514,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * - dependentBeanMap：维护依赖bean到被依赖bean的映射。【方便bean创建时判断循环依赖】
 	 * - dependenciesForBeanMap：维护被依赖bean到依赖bean的映射。【方便bean销毁时先销毁依赖bean】
 	 * 【dependentBeanName 依赖 beanName】
-	 * @param beanName the name of the bean
-	 * @param dependentBeanName the name of the dependent bean
+	 * @param beanName the name of the bean  -- B (假设A 依赖  B)
+	 * @param dependentBeanName the name of the dependent bean -- A (假设A 依赖  B)
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
 		// 注：为什么dependentBeanName不处理别名呢？

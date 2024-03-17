@@ -45,6 +45,7 @@ public interface ConfigurableListableBeanFactory
 	/**
 	 * Ignore the given dependency type for autowiring:
 	 * for example, String. Default is none.
+	 * 注：忽略自动装配的依赖类型
 	 * @param type the dependency type to ignore
 	 */
 	void ignoreDependencyType(Class<?> type);
