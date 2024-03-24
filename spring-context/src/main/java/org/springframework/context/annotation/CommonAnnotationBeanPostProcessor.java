@@ -195,8 +195,11 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	 * respectively.
 	 */
 	public CommonAnnotationBeanPostProcessor() {
+		// 注：设置当前后置处理器的优先级
 		setOrder(Ordered.LOWEST_PRECEDENCE - 3);
+		// 注：指定用于检查的初始化注解，该注解标识bean对象的初始化方法
 		setInitAnnotationType(PostConstruct.class);
+		// 注：指定用于检查的销毁注解，该注解标识在上下文关闭时调用的销毁方法
 		setDestroyAnnotationType(PreDestroy.class);
 		ignoreResourceType("javax.xml.ws.WebServiceContext");
 	}

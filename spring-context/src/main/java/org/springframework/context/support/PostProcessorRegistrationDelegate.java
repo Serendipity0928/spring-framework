@@ -256,7 +256,7 @@ final class PostProcessorRegistrationDelegate {
 	 */
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
-		// 注：通过beanFactory的getBeanNamesForType方法获取BeanPostProcessor类型的Bean，实际上即使容器已注入的Bean后置处理器，但尚未被实例化
+		// 注：通过beanFactory的getBeanNamesForType方法获取BeanPostProcessor类型的Bean，实际上即是容器已注入的Bean后置处理器，但尚未被实例化
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when

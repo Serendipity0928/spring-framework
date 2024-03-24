@@ -8,8 +8,10 @@ public class Main {
 	public static void main(String[] args) {
 
 		ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("context/spring-context.xml");
-		Object postConstruct = ac.getBean("postConstruct");
+		Object postConstruct = ac.getBean("postConstructTest");
 		System.out.println(postConstruct);
+
+
 	}
 
 }

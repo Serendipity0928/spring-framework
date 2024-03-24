@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
 	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
 
 	<!-- 配置Person类型bean-->
-	<bean id="person" class="com.spl.context.pojo.Person">
-		<property name="age" value="1"/>
+<!--	<bean id="person" class="com.spl.context.pojo.Person">-->
+<!--		<property name="age" value="1"/>-->
+<!--	</bean>-->
+
+	<!-- 开启注解配置方式①：配置annotation-config标签 -->
+	<context:annotation-config />
+	<!-- 开启注解配置方式②：配置context:component-scan标签，默认annotation-config属性为true -->
+<!--	<context:component-scan base-package="com.spl.context.pojo"/>-->
+
+	<bean id="postConstructTest" class="com.spl.context.pojo.PostConstructTest">
 	</bean>
 
-	<bean id="postConstruct" class="com.spl.context.pojo.PostConstructTest">
-	</bean>
 
 </beans>

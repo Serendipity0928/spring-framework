@@ -2254,7 +2254,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (StringUtils.hasLength(initMethodName) &&
 					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
 					!mbd.isExternallyManagedInitMethod(initMethodName)) {
-				// 注：指定自定义的初始化方法
 				invokeCustomInitMethod(beanName, bean, mbd);
 			}
 		}
